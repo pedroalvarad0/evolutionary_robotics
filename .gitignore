@@ -25,3 +25,5 @@ plugins/*/*/*.dylib
 
 # Temporary simulation directories
 tmp/
+
+__pycache__/
