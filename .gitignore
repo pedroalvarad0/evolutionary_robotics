@@ -1,0 +1,27 @@
+.DS_Store
+
+# Webots temporary files
+*.wbt.bak
+*.wbo.bak
+*.proto.bak
+
+# Cache and logs
+cache/
+log/
+
+# Controller compilation files
+controllers/*/*.o
+controllers/*/*.exe
+controllers/*/*.dll
+controllers/*/*.so
+controllers/*/*.dylib
+
+# Plugin compilation files
+plugins/*/*/*.o
+plugins/*/*/*.exe
+plugins/*/*/*.dll
+plugins/*/*/*.so
+plugins/*/*/*.dylib
+
+# Temporary simulation directories
+tmp/
