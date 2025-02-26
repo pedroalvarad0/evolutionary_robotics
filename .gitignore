@@ -27,3 +27,5 @@ plugins/*/*/*.dylib
 tmp/
 
 __pycache__/
+*.jpg
+*.ipynb

@@ -3,7 +3,8 @@
 from controller import Robot, Supervisor
 import torch
 import numpy as np
-from genetic_algorithm import Individual, create_next_generation, calculate_step_fitness
+#from genetic_algorithm import Individual, create_next_generation, calculate_step_fitness
+from genetic_algorithm import GeneticAlgorithm
 from robot_network import RobotNetwork
 
 
@@ -64,7 +65,16 @@ current_individual = 0
 current_generation = 0
 current_time = 0
 previous_time = 0
-population = [Individual(network=RobotNetwork(), fitness=0.0) for _ in range(POPULATION_SIZE)]
+
+genetic_algorithm = GeneticAlgorithm(
+    population_size=POPULATION_SIZE,
+    generations=GENERATIONS,
+    crossover_rate=0.8,
+    mutation_rate=0.02,
+    representation="real"
+)
+
+population = genetic_algorithm.generate_initial_population()
 history = []
 
 while robot.step(timestep) != -1:
@@ -91,7 +101,7 @@ while robot.step(timestep) != -1:
             current_individual = 0
 
             # next generation
-            fittest_individual, new_population = create_next_generation(population)
+            fittest_individual, new_population = genetic_algorithm.create_next_generation(population)
 
             print(f"Generation: {current_generation}, Best Fitness: {fittest_individual.fitness}")
 
@@ -112,7 +122,7 @@ while robot.step(timestep) != -1:
     # input_tensor = torch.hstack([torch.tensor(normalized_light_sensor_values), torch.tensor(normalized_distance_sensor_values)])
 
     input_tensor = torch.tensor(normalized_light_sensor_values)
-    fitness_step = calculate_step_fitness(input_tensor)
+    fitness_step = genetic_algorithm.calculate_step_fitness(input_tensor)
     population[current_individual].fitness += fitness_step
 
     # current_individual_last_position = translation_field.getSFVec3f()
