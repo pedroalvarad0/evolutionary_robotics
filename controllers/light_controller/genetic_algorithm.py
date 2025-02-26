@@ -3,12 +3,39 @@ import numpy as np
 from dataclasses import dataclass
 from robot_network import RobotNetwork
 from torch.distributions.uniform import Uniform
+import struct
 
-@dataclass
 class Individual:
-    network: RobotNetwork
-    fitness: float
+    def __init__(self, network):
+        self.fitness = 0.0
+        self.network = network
+        self.binary_weights = self.weights_to_binary()
 
+    def weights_to_binary(self):
+        binary_representation = []
+        for param in self.network.parameters():
+            weights = param.data.numpy().flatten()
+            for weight in weights:
+                binary = format(struct.unpack('!I', struct.pack('!f', weight))[0], '032b')
+                binary_representation.extend(list(binary))
+        return binary_representation
+
+    def binary_to_weights(self):
+        weights = []
+        for i in range(0, len(self.binary_weights), 32):
+            binary_weight = ''.join(self.binary_weights[i:i+32])
+            float_weight = struct.unpack('!f', struct.pack('!I', int(binary_weight, 2)))[0]
+            weights.append(float_weight)
+        return weights
+    
+    def update_network_weights(self):
+        weights = self.binary_to_weights()
+        idx = 0
+        for param in self.network.parameters():
+            layer_size = param.data.numel()
+            layer_weights = weights[idx:idx + layer_size]
+            param.data = torch.tensor(layer_weights).reshape(param.data.shape)
+            idx += layer_size
 
 class GeneticAlgorithm:
     def __init__(self, population_size=100, generations=100, crossover_rate=0.8, mutation_rate=0.02, representation="binary"):
@@ -19,7 +46,7 @@ class GeneticAlgorithm:
         self.representation = representation
 
     def generate_random_individual(self):
-        return Individual(network=RobotNetwork(), fitness=0.0)
+        return Individual(network=RobotNetwork())
     
     def generate_initial_population(self):
         return [self.generate_random_individual() for _ in range(self.population_size)]
