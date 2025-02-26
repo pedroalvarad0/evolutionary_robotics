@@ -126,12 +126,18 @@ class GeneticAlgorithm:
 
         return child
     
-    def crossover_binary(self, parent1, parent2):
-        # Ensure crossover point is aligned with 32-bit boundaries
+    def two_point_crossover(self, parent1, parent2):
         num_weights = len(parent1.binary_weights) // 32
-        crossover_point = np.random.randint(0, num_weights) * 32
-        child1_binary = parent1.binary_weights[:crossover_point] + parent2.binary_weights[crossover_point:]
-        child2_binary = parent2.binary_weights[:crossover_point] + parent1.binary_weights[crossover_point:]
+        # Ensure points are aligned with 32-bit boundaries and point1 < point2
+        point1 = np.random.randint(0, num_weights - 1) * 32
+        point2 = np.random.randint(point1//32 + 1, num_weights) * 32
+
+        child1_binary = (parent1.binary_weights[:point1] + 
+                        parent2.binary_weights[point1:point2] + 
+                        parent1.binary_weights[point2:])
+        child2_binary = (parent2.binary_weights[:point1] + 
+                        parent1.binary_weights[point1:point2] + 
+                        parent2.binary_weights[point2:])
 
         child1 = Individual(RobotNetwork())
         child2 = Individual(RobotNetwork())
@@ -143,6 +149,59 @@ class GeneticAlgorithm:
         child2.update_network_weights()
 
         return child1, child2
+
+    def uniform_crossover(self, parent1, parent2):
+        num_weights = len(parent1.binary_weights) // 32
+        child1_binary = []
+        child2_binary = []
+
+        for i in range(num_weights):
+            start_idx = i * 32
+            end_idx = start_idx + 32
+            # Decide for each 32-bit group which parent to take from
+            if np.random.random() < 0.5:
+                child1_binary.extend(parent1.binary_weights[start_idx:end_idx])
+                child2_binary.extend(parent2.binary_weights[start_idx:end_idx])
+            else:
+                child1_binary.extend(parent2.binary_weights[start_idx:end_idx])
+                child2_binary.extend(parent1.binary_weights[start_idx:end_idx])
+
+        child1 = Individual(RobotNetwork())
+        child2 = Individual(RobotNetwork())
+
+        child1.binary_weights = child1_binary
+        child2.binary_weights = child2_binary
+
+        child1.update_network_weights()
+        child2.update_network_weights()
+
+        return child1, child2
+
+    def crossover_binary(self, parent1, parent2):
+        # Podemos elegir aleatoriamente el tipo de cruce o establecerlo como parámetro
+        crossover_type = np.random.choice(['one_point', 'two_point', 'uniform'])
+        
+        if crossover_type == 'one_point':
+            # Original one-point crossover
+            num_weights = len(parent1.binary_weights) // 32
+            crossover_point = np.random.randint(0, num_weights) * 32
+            child1_binary = parent1.binary_weights[:crossover_point] + parent2.binary_weights[crossover_point:]
+            child2_binary = parent2.binary_weights[:crossover_point] + parent1.binary_weights[crossover_point:]
+
+            child1 = Individual(RobotNetwork())
+            child2 = Individual(RobotNetwork())
+
+            child1.binary_weights = child1_binary
+            child2.binary_weights = child2_binary
+
+            child1.update_network_weights()
+            child2.update_network_weights()
+
+            return child1, child2
+        elif crossover_type == 'two_point':
+            return self.two_point_crossover(parent1, parent2)
+        else:  # uniform
+            return self.uniform_crossover(parent1, parent2)
     
     def mutate_real_valued(self, individual):
         std = (1 - (-1)) / 6
