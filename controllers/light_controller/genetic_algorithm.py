@@ -127,12 +127,14 @@ class GeneticAlgorithm:
         return child
     
     def crossover_binary(self, parent1, parent2):
-        crossover_point = np.random.randint(0, len(parent1.binary_weights))
+        # Ensure crossover point is aligned with 32-bit boundaries
+        num_weights = len(parent1.binary_weights) // 32
+        crossover_point = np.random.randint(0, num_weights) * 32
         child1_binary = parent1.binary_weights[:crossover_point] + parent2.binary_weights[crossover_point:]
         child2_binary = parent2.binary_weights[:crossover_point] + parent1.binary_weights[crossover_point:]
 
-        child1 = Individual(parent1.network.clone())
-        child2 = Individual(parent2.network.clone())
+        child1 = Individual(RobotNetwork())
+        child2 = Individual(RobotNetwork())
 
         child1.binary_weights = child1_binary
         child2.binary_weights = child2_binary
@@ -166,8 +168,19 @@ class GeneticAlgorithm:
         individual.network.fc2.bias.data += mutation_mask_fc2_bias * mutation_values_fc2_bias
     
     def mutate_binary(self, individual):
-        for i in range(len(individual.binary_weights)):
+        num_weights = len(individual.binary_weights) // 32
+        for i in range(num_weights):
             if np.random.random() < self.mutation_rate:
-                individual.binary_weights[i] = '1' if individual.binary_weights[i] == '0' else '0'
-
+                # Get the 32-bit group
+                start_idx = i * 32
+                end_idx = start_idx + 32
+                weight_bits = individual.binary_weights[start_idx:end_idx]
+                
+                # Generate a new random float and convert it to binary
+                new_weight = np.random.uniform(-1, 1)
+                new_binary = format(struct.unpack('!I', struct.pack('!f', new_weight))[0], '032b')
+                
+                # Replace the old 32-bit group with the new one
+                individual.binary_weights[start_idx:end_idx] = list(new_binary)
+        
         individual.update_network_weights()

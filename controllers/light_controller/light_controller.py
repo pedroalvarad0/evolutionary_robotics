@@ -71,7 +71,7 @@ genetic_algorithm = GeneticAlgorithm(
     generations=GENERATIONS,
     crossover_rate=0.8,
     mutation_rate=0.02,
-    representation="real"
+    representation="binary"
 )
 
 population = genetic_algorithm.generate_initial_population()
@@ -131,5 +131,10 @@ while robot.step(timestep) != -1:
     percentage_left_speed = directions[0].item()
     percentage_right_speed = directions[1].item()
 
-    left_motor.setVelocity(percentage_left_speed * MAX_SPEED)
-    right_motor.setVelocity(percentage_right_speed * MAX_SPEED)
+    left_motor_velocity = percentage_left_speed * MAX_SPEED
+    right_motor_velocity = percentage_right_speed * MAX_SPEED
+
+    #print(f"Left motor velocity: {left_motor_velocity}, Right motor velocity: {right_motor_velocity}, {percentage_left_speed}, {percentage_right_speed}")
+
+    left_motor.setVelocity(left_motor_velocity)
+    right_motor.setVelocity(right_motor_velocity)
