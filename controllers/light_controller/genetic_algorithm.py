@@ -77,7 +77,7 @@ def mutate(individual):
     return individual
 
 
-def create_next_generation(population, crossover_rate=0.8, mutation_rate=0.4):
+def create_next_generation(population, crossover_rate=0.8, mutation_rate=0.02):
     population = sorted(population, key=lambda x: x.fitness, reverse=True)
     fittest_individual = population[0]
 
