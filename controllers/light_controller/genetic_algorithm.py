@@ -52,17 +52,9 @@ class GeneticAlgorithm:
         return [self.generate_random_individual() for _ in range(self.population_size)]
     
     def calculate_step_fitness(self, normalized_light_sensor_values):
-        # Inicializamos el fitness en 0
-        fitness = 0.0
+        best_sensor_value = min(normalized_light_sensor_values)
         
-        # Por cada sensor, si está recibiendo luz (valor cercano a 0)
-        # incrementamos el fitness
-        for sensor_value in normalized_light_sensor_values:
-            # Como 0 es máxima luz y 1 es mínima luz,
-            # restamos el valor de 1 para que valores bajos den más fitness
-            fitness += (1 - sensor_value)
-        
-        return fitness
+        return 1 - best_sensor_value
     
     def create_next_generation(self, population):
         population = sorted(population, key=lambda x: x.fitness, reverse=True)
