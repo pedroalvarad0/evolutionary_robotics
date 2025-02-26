@@ -77,18 +77,21 @@ class GeneticAlgorithm:
             if np.random.random() < self.crossover_rate:
                 if self.representation == "real":
                     child = self.crossover_real_valued(parent1, parent2)
+                    self.mutate_real_valued(child)
+
+                    new_population.append(child)
+                    
                 elif self.representation == "binary":
-                    child = self.crossover_binary(parent1, parent2)
+                    child1, child2 = self.crossover_binary(parent1, parent2)
+
+                    self.mutate_binary(child1)
+                    self.mutate_binary(child2)
+
+                    new_population.append(child1)
+                    new_population.append(child2)
             else:
                 child = np.random.choice([parent1, parent2])
-
-            if np.random.random() < self.mutation_rate:
-                if self.representation == "real":
-                    child = self.mutate_real_valued(child)
-                elif self.representation == "binary":
-                    child = self.mutate_binary(child)
-	
-            new_population.append(child)
+                new_population.append(child)
 
         return fittest_individual, new_population
     
@@ -119,31 +122,52 @@ class GeneticAlgorithm:
         child_network.fc2.weight.data = new_fc2_weight
         child_network.fc2.bias.data = new_fc2_bias
 
-        child = Individual(network=child_network, fitness=0.0)
+        child = Individual(network=child_network)
 
         return child
     
     def crossover_binary(self, parent1, parent2):
-        pass
+        crossover_point = np.random.randint(0, len(parent1.binary_weights))
+        child1_binary = parent1.binary_weights[:crossover_point] + parent2.binary_weights[crossover_point:]
+        child2_binary = parent2.binary_weights[:crossover_point] + parent1.binary_weights[crossover_point:]
+
+        child1 = Individual(parent1.network.clone())
+        child2 = Individual(parent2.network.clone())
+
+        child1.binary_weights = child1_binary
+        child2.binary_weights = child2_binary
+
+        child1.update_network_weights()
+        child2.update_network_weights()
+
+        return child1, child2
     
     def mutate_real_valued(self, individual):
         std = (1 - (-1)) / 6
-        mutation_matrix_fc1_weight = torch.randn(individual.network.fc1.weight.shape) * std
-        mutation_matrix_fc1_bias = torch.randn(individual.network.fc1.bias.shape) * std
-        mutation_matrix_fc2_weight = torch.randn(individual.network.fc2.weight.shape) * std
-        mutation_matrix_fc2_bias = torch.randn(individual.network.fc2.bias.shape) * std
-
-        new_fc1_weight = individual.network.fc1.weight.data + mutation_matrix_fc1_weight
-        new_fc1_bias = individual.network.fc1.bias.data + mutation_matrix_fc1_bias
-        new_fc2_weight = individual.network.fc2.weight.data + mutation_matrix_fc2_weight
-        new_fc2_bias = individual.network.fc2.bias.data + mutation_matrix_fc2_bias
-
-        individual.network.fc1.weight.data = new_fc1_weight
-        individual.network.fc1.bias.data = new_fc1_bias
-        individual.network.fc2.weight.data = new_fc2_weight
-        individual.network.fc2.bias.data = new_fc2_bias
-
-        return individual
+        
+        # FC1 weights mutation
+        mutation_mask_fc1_weight = torch.rand(individual.network.fc1.weight.shape) < self.mutation_rate
+        mutation_values_fc1_weight = torch.randn(individual.network.fc1.weight.shape) * std
+        individual.network.fc1.weight.data += mutation_mask_fc1_weight * mutation_values_fc1_weight
+        
+        # FC1 bias mutation
+        mutation_mask_fc1_bias = torch.rand(individual.network.fc1.bias.shape) < self.mutation_rate
+        mutation_values_fc1_bias = torch.randn(individual.network.fc1.bias.shape) * std
+        individual.network.fc1.bias.data += mutation_mask_fc1_bias * mutation_values_fc1_bias
+        
+        # FC2 weights mutation
+        mutation_mask_fc2_weight = torch.rand(individual.network.fc2.weight.shape) < self.mutation_rate
+        mutation_values_fc2_weight = torch.randn(individual.network.fc2.weight.shape) * std
+        individual.network.fc2.weight.data += mutation_mask_fc2_weight * mutation_values_fc2_weight
+        
+        # FC2 bias mutation
+        mutation_mask_fc2_bias = torch.rand(individual.network.fc2.bias.shape) < self.mutation_rate
+        mutation_values_fc2_bias = torch.randn(individual.network.fc2.bias.shape) * std
+        individual.network.fc2.bias.data += mutation_mask_fc2_bias * mutation_values_fc2_bias
     
     def mutate_binary(self, individual):
-        pass
+        for i in range(len(individual.binary_weights)):
+            if np.random.random() < self.mutation_rate:
+                individual.binary_weights[i] = '1' if individual.binary_weights[i] == '0' else '0'
+
+        individual.update_network_weights()
