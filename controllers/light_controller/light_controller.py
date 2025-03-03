@@ -165,6 +165,9 @@ while robot.step(timestep) != -1:
         translation_field.setSFVec3f(INITIAL_POSITION)
         rotation_field.setSFRotation(INITIAL_ROTATION)
         light_translation_field.setSFVec3f(INITIAL_LIGHT_POSITION)
+
+        light_direction = normalize_direction([random.uniform(-1, 1), random.uniform(-1, 1), 0])
+
         robot.step(timestep)
 
         if current_individual == POPULATION_SIZE:
