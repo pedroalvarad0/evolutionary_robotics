@@ -44,13 +44,51 @@ arena_size = 1.0 # 1x1 metros
 ARENA_LIMITS = {
     'x_min': arena_translation[0] - arena_size/2,
     'x_max': arena_translation[0] + arena_size/2,
-    'z_min': arena_translation[2] - arena_size/2,
-    'z_max': arena_translation[2] + arena_size/2,
-    'y': 0.25  # altura fija de la luz
+    'y_min': arena_translation[2] - arena_size/2,
+    'y_max': arena_translation[2] + arena_size/2,
+    'z': 0.25  # altura fija de la luz
 }
 
 LIGHT_MOVE_INTERVAL = 5.0
 last_light_move_time = 0
+
+LIGHT_STEP_SIZE = 0.005 # Tamaño del paso en cada movimiento
+LIGHT_DIRECTION_CHANGE_INTERVAL = 3.0 # Cada cuántos segundos cambia de dirección
+last_direction_change = 0
+light_direction = [random.uniform(-1, 1), random.uniform(-1, 1), 0] # Dirección inicial aleatoria
+
+def normalize_direction(direction):
+    """Normaliza un vector de dirección"""
+    magnitude = (direction[0]**2 + direction[1]**2)**0.5
+    if magnitude == 0:
+        return [1, 0, 0]
+    return [direction[0]/magnitude, direction[1]/magnitude, 0]
+
+def move_light_step(light_translation_field):
+    """Mueve la luz un paso en la dirección actual, respetando los límites"""
+    current_pos = light_translation_field.getSFVec3f()
+    
+    # Calcular nueva posición
+    new_x = current_pos[0] + light_direction[0] * LIGHT_STEP_SIZE
+    new_y = current_pos[1] + light_direction[1] * LIGHT_STEP_SIZE
+    
+    # Verificar y ajustar límites
+    if new_x < ARENA_LIMITS['x_min']:
+        new_x = ARENA_LIMITS['x_min']
+        light_direction[0] *= -1  # Rebota en la pared
+    elif new_x > ARENA_LIMITS['x_max']:
+        new_x = ARENA_LIMITS['x_max']
+        light_direction[0] *= -1  # Rebota en la pared
+        
+    if new_y < ARENA_LIMITS['y_min']:
+        new_y = ARENA_LIMITS['y_min']
+        light_direction[1] *= -1  # Rebota en la pared
+    elif new_y > ARENA_LIMITS['y_max']:
+        new_y = ARENA_LIMITS['y_max']
+        light_direction[1] *= -1  # Rebota en la pared
+    
+    new_position = [new_x, new_y, ARENA_LIMITS['z']]
+    light_translation_field.setSFVec3f(new_position)
 
 INITIAL_POSITION = translation_field.getSFVec3f()
 INITIAL_ROTATION = rotation_field.getSFRotation()
@@ -102,9 +140,15 @@ while robot.step(timestep) != -1:
     previous_time = current_time
     current_time = robot.getTime() % MAX_TIME
 
-    if current_time - last_light_move_time >= LIGHT_MOVE_INTERVAL:
-        light_translation_field.setSFVec3f([random.uniform(ARENA_LIMITS['x_min'], ARENA_LIMITS['x_max']), random.uniform(ARENA_LIMITS['z_min'], ARENA_LIMITS['z_max']), ARENA_LIMITS['y']])
-        last_light_move_time = current_time
+    # if current_time - last_light_move_time >= LIGHT_MOVE_INTERVAL:
+    #     light_translation_field.setSFVec3f([random.uniform(ARENA_LIMITS['x_min'], ARENA_LIMITS['x_max']), random.uniform(ARENA_LIMITS['y_min'], ARENA_LIMITS['y_max']), ARENA_LIMITS['z']])
+    #     last_light_move_time = current_time
+
+    if current_time - last_direction_change >= LIGHT_DIRECTION_CHANGE_INTERVAL:
+        light_direction = normalize_direction([random.uniform(-1, 1), random.uniform(-1, 1), 0])
+        last_direction_change = current_time
+
+    move_light_step(light_translation_field)
 
     if previous_time > current_time: # nuevo individuo
         current_individual += 1
