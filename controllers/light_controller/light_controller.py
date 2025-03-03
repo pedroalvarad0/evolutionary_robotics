@@ -38,7 +38,8 @@ translation_field = robot_node.getField("translation")
 rotation_field = robot_node.getField("rotation")
 
 light_translation_field = light_node.getField("translation")
-arena_translation = arena_node.getField("translation").getSFVec3f()
+arena_translation_field = arena_node.getField("translation")
+arena_translation = arena_translation_field.getSFVec3f()
 arena_size = 1.0 # 1x1 metros
 
 ARENA_LIMITS = {
@@ -52,7 +53,7 @@ ARENA_LIMITS = {
 LIGHT_MOVE_INTERVAL = 5.0
 last_light_move_time = 0
 
-LIGHT_STEP_SIZE = 0.005 # Tamaño del paso en cada movimiento
+LIGHT_STEP_SIZE = 0.0015 # Tamaño del paso en cada movimiento
 LIGHT_DIRECTION_CHANGE_INTERVAL = 3.0 # Cada cuántos segundos cambia de dirección
 last_direction_change = 0
 light_direction = [random.uniform(-1, 1), random.uniform(-1, 1), 0] # Dirección inicial aleatoria
@@ -92,6 +93,7 @@ def move_light_step(light_translation_field):
 
 INITIAL_POSITION = translation_field.getSFVec3f()
 INITIAL_ROTATION = rotation_field.getSFRotation()
+INITIAL_LIGHT_POSITION = light_translation_field.getSFVec3f()
 
 left_motor = robot.getDevice('left wheel motor')
 right_motor = robot.getDevice('right wheel motor')
@@ -162,7 +164,7 @@ while robot.step(timestep) != -1:
 
         translation_field.setSFVec3f(INITIAL_POSITION)
         rotation_field.setSFRotation(INITIAL_ROTATION)
-
+        light_translation_field.setSFVec3f(INITIAL_LIGHT_POSITION)
         robot.step(timestep)
 
         if current_individual == POPULATION_SIZE:
