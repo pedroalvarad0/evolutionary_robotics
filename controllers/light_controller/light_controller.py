@@ -114,18 +114,11 @@ while robot.step(timestep) != -1:
     sensor_values = get_sensor_values(light_sensors)
     normalized_light_sensor_values = normalize_sensor_values(sensor_values, 0, 4095)
 
-    #print(normalized_light_sensor_values)
-
-    # distance_sensor_values = get_sensor_values(distance_sensors)
-    # normalized_distance_sensor_values = normalize_sensor_values(distance_sensor_values, 60, 3000)
-    
-    # input_tensor = torch.hstack([torch.tensor(normalized_light_sensor_values), torch.tensor(normalized_distance_sensor_values)])
+    print(normalized_light_sensor_values)
 
     input_tensor = torch.tensor(normalized_light_sensor_values)
     fitness_step = genetic_algorithm.calculate_step_fitness(input_tensor)
     population[current_individual].fitness += fitness_step
-
-    # current_individual_last_position = translation_field.getSFVec3f()
 
     directions = population[current_individual].network.forward(input_tensor)
     percentage_left_speed = directions[0].item()
@@ -133,8 +126,6 @@ while robot.step(timestep) != -1:
 
     left_motor_velocity = percentage_left_speed * MAX_SPEED
     right_motor_velocity = percentage_right_speed * MAX_SPEED
-
-    #print(f"Left motor velocity: {left_motor_velocity}, Right motor velocity: {right_motor_velocity}, {percentage_left_speed}, {percentage_right_speed}")
 
     left_motor.setVelocity(left_motor_velocity)
     right_motor.setVelocity(right_motor_velocity)
