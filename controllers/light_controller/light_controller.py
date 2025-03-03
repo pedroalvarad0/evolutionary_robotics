@@ -27,10 +27,15 @@ GENERATIONS = 20
 
 robot = Supervisor()
 timestep = int(robot.getBasicTimeStep())
+
+# nodes
 robot_node = robot.getFromDef("EPUCK")
+light_node = robot.getFromDef("LIGHT")
 
 translation_field = robot_node.getField("translation")
 rotation_field = robot_node.getField("rotation")
+
+light_translation_field = light_node.getField("translation")
 
 INITIAL_POSITION = translation_field.getSFVec3f()
 INITIAL_ROTATION = rotation_field.getSFRotation()
@@ -114,7 +119,8 @@ while robot.step(timestep) != -1:
     sensor_values = get_sensor_values(light_sensors)
     normalized_light_sensor_values = normalize_sensor_values(sensor_values, 0, 4095)
 
-    print(normalized_light_sensor_values)
+    #print(normalized_light_sensor_values)
+    print(light_translation_field.getSFVec3f())
 
     input_tensor = torch.tensor(normalized_light_sensor_values)
     fitness_step = genetic_algorithm.calculate_step_fitness(input_tensor)
