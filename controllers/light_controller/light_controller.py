@@ -3,6 +3,7 @@
 from controller import Robot, Supervisor
 import torch
 import numpy as np
+import random
 #from genetic_algorithm import Individual, create_next_generation, calculate_step_fitness
 from genetic_algorithm import GeneticAlgorithm
 from robot_network import RobotNetwork
@@ -31,11 +32,25 @@ timestep = int(robot.getBasicTimeStep())
 # nodes
 robot_node = robot.getFromDef("EPUCK")
 light_node = robot.getFromDef("LIGHT")
+arena_node = robot.getFromDef("ARENA")
 
 translation_field = robot_node.getField("translation")
 rotation_field = robot_node.getField("rotation")
 
 light_translation_field = light_node.getField("translation")
+arena_translation = arena_node.getField("translation").getSFVec3f()
+arena_size = 1.0 # 1x1 metros
+
+ARENA_LIMITS = {
+    'x_min': arena_translation[0] - arena_size/2,
+    'x_max': arena_translation[0] + arena_size/2,
+    'z_min': arena_translation[2] - arena_size/2,
+    'z_max': arena_translation[2] + arena_size/2,
+    'y': 0.25  # altura fija de la luz
+}
+
+LIGHT_MOVE_INTERVAL = 5.0
+last_light_move_time = 0
 
 INITIAL_POSITION = translation_field.getSFVec3f()
 INITIAL_ROTATION = rotation_field.getSFRotation()
@@ -87,6 +102,10 @@ while robot.step(timestep) != -1:
     previous_time = current_time
     current_time = robot.getTime() % MAX_TIME
 
+    if current_time - last_light_move_time >= LIGHT_MOVE_INTERVAL:
+        light_translation_field.setSFVec3f([random.uniform(ARENA_LIMITS['x_min'], ARENA_LIMITS['x_max']), random.uniform(ARENA_LIMITS['z_min'], ARENA_LIMITS['z_max']), ARENA_LIMITS['y']])
+        last_light_move_time = current_time
+
     if previous_time > current_time: # nuevo individuo
         current_individual += 1
 
@@ -120,7 +139,7 @@ while robot.step(timestep) != -1:
     normalized_light_sensor_values = normalize_sensor_values(sensor_values, 0, 4095)
 
     #print(normalized_light_sensor_values)
-    print(light_translation_field.getSFVec3f())
+    #print(light_translation_field.getSFVec3f())
 
     input_tensor = torch.tensor(normalized_light_sensor_values)
     fitness_step = genetic_algorithm.calculate_step_fitness(input_tensor)
