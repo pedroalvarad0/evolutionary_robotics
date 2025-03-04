@@ -29,7 +29,7 @@ def normalize_angle(theta):
 def get_sensor_angles(start_angle, degrees):
     radians = np.radians(degrees)
     angles = (start_angle + radians) % (2 * np.pi)
-    return angles
+    return angles.tolist()
 
 
 MAX_SPEED = 6.28
@@ -139,6 +139,9 @@ current_generation = 0
 current_time = 0
 previous_time = 0
 
+angles_history = []
+sensor_angles_history = []
+
 genetic_algorithm = GeneticAlgorithm(
     population_size=POPULATION_SIZE,
     generations=GENERATIONS,
@@ -166,6 +169,10 @@ while robot.step(timestep) != -1:
     move_light_step(light_translation_field)
 
     if previous_time > current_time: # nuevo individuo
+
+        print(f"angle history len: {len(angles_history)}")
+        print(f"sensor angle history len: {len(sensor_angles_history)}")
+
         current_individual += 1
 
         left_motor.setVelocity(0.0)
@@ -203,35 +210,26 @@ while robot.step(timestep) != -1:
     #print(rotation_field.getSFRotation())
     rotation_angle = rotation_field.getSFRotation()[3]
     rotation_angle = normalize_angle(rotation_angle)
-
     sensor_angles = get_sensor_angles(rotation_angle, degrees_array)
 
-    #vector = [np.cos(rotation_angle), np.sin(rotation_angle), 0]
-    #print(rotation_angle, vector)
-
-    #print(np.arctan2(vector[1], vector[0]))
-
-    #print(rotation_angle)
-
-    
-
-    print(rotation_angle, sensor_angles)
+    angles_history.append(rotation_angle)
+    sensor_angles_history.append(sensor_angles)
 
     # ------------------------------------------------------------
 
     #print(normalized_light_sensor_values)
     #print(light_translation_field.getSFVec3f())
 
-    # input_tensor = torch.tensor(normalized_light_sensor_values)
-    # fitness_step = genetic_algorithm.calculate_step_fitness(input_tensor)
-    # population[current_individual].fitness += fitness_step
+    input_tensor = torch.tensor(normalized_light_sensor_values)
+    fitness_step = genetic_algorithm.calculate_step_fitness(input_tensor)
+    population[current_individual].fitness += fitness_step
 
-    # directions = population[current_individual].network.forward(input_tensor)
-    # percentage_left_speed = directions[0].item()
-    # percentage_right_speed = directions[1].item()
+    directions = population[current_individual].network.forward(input_tensor)
+    percentage_left_speed = directions[0].item()
+    percentage_right_speed = directions[1].item()
 
-    # left_motor_velocity = percentage_left_speed * MAX_SPEED
-    # right_motor_velocity = percentage_right_speed * MAX_SPEED
+    left_motor_velocity = percentage_left_speed * MAX_SPEED
+    right_motor_velocity = percentage_right_speed * MAX_SPEED
 
-    # left_motor.setVelocity(left_motor_velocity)
-    # right_motor.setVelocity(right_motor_velocity)
+    left_motor.setVelocity(left_motor_velocity)
+    right_motor.setVelocity(right_motor_velocity)
