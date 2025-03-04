@@ -4,7 +4,6 @@ from controller import Robot, Supervisor
 import torch
 import numpy as np
 import random
-#from genetic_algorithm import Individual, create_next_generation, calculate_step_fitness
 from genetic_algorithm import GeneticAlgorithm
 from robot_network import RobotNetwork
 
@@ -19,6 +18,18 @@ def get_sensor_values(sensors):
 def normalize_sensor_values(sensor_values, min_value, max_value):
     normalized = [(x - min_value) / (max_value - min_value) for x in sensor_values]
     return normalized
+
+
+def normalize_angle(theta):
+    if theta < 0:
+        theta += 2 * np.pi
+    return theta
+
+
+def get_sensor_angles(start_angle, degrees):
+    radians = np.radians(degrees)
+    angles = (start_angle + radians) % (2 * np.pi)
+    return angles
 
 
 MAX_SPEED = 6.28
@@ -107,6 +118,8 @@ right_motor.setVelocity(0.0)
 light_sensor_names = ["ls0", "ls1", "ls2", "ls3", "ls4", "ls5", "ls6", "ls7"]
 light_sensors = []
 
+degrees_array = [20, 45, 90, 150, 210, 270, 315, 340]
+
 distance_sensor_names = ["ps0", "ps1", "ps2", "ps3", "ps4", "ps5", "ps6", "ps7"]
 distance_sensors = []
 
@@ -187,19 +200,38 @@ while robot.step(timestep) != -1:
     sensor_values = get_sensor_values(light_sensors)
     normalized_light_sensor_values = normalize_sensor_values(sensor_values, 0, 4095)
 
+    #print(rotation_field.getSFRotation())
+    rotation_angle = rotation_field.getSFRotation()[3]
+    rotation_angle = normalize_angle(rotation_angle)
+
+    sensor_angles = get_sensor_angles(rotation_angle, degrees_array)
+
+    #vector = [np.cos(rotation_angle), np.sin(rotation_angle), 0]
+    #print(rotation_angle, vector)
+
+    #print(np.arctan2(vector[1], vector[0]))
+
+    #print(rotation_angle)
+
+    
+
+    print(rotation_angle, sensor_angles)
+
+    # ------------------------------------------------------------
+
     #print(normalized_light_sensor_values)
     #print(light_translation_field.getSFVec3f())
 
-    input_tensor = torch.tensor(normalized_light_sensor_values)
-    fitness_step = genetic_algorithm.calculate_step_fitness(input_tensor)
-    population[current_individual].fitness += fitness_step
+    # input_tensor = torch.tensor(normalized_light_sensor_values)
+    # fitness_step = genetic_algorithm.calculate_step_fitness(input_tensor)
+    # population[current_individual].fitness += fitness_step
 
-    directions = population[current_individual].network.forward(input_tensor)
-    percentage_left_speed = directions[0].item()
-    percentage_right_speed = directions[1].item()
+    # directions = population[current_individual].network.forward(input_tensor)
+    # percentage_left_speed = directions[0].item()
+    # percentage_right_speed = directions[1].item()
 
-    left_motor_velocity = percentage_left_speed * MAX_SPEED
-    right_motor_velocity = percentage_right_speed * MAX_SPEED
+    # left_motor_velocity = percentage_left_speed * MAX_SPEED
+    # right_motor_velocity = percentage_right_speed * MAX_SPEED
 
-    left_motor.setVelocity(left_motor_velocity)
-    right_motor.setVelocity(right_motor_velocity)
+    # left_motor.setVelocity(left_motor_velocity)
+    # right_motor.setVelocity(right_motor_velocity)

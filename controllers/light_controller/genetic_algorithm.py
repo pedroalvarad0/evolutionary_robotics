@@ -53,6 +53,10 @@ class GeneticAlgorithm:
     
     def calculate_step_fitness(self, normalized_light_sensor_values):
         best_sensor_value = min(normalized_light_sensor_values)
+
+        idx = np.argmin(normalized_light_sensor_values)
+
+        #print(f"ls{idx} detectando mayor valor de luz {best_sensor_value}")
         
         return 1 - best_sensor_value
     

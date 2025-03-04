@@ -16,7 +16,7 @@ TexturedBackground {
 TexturedBackgroundLight {
   luminosity 0
 }
-RectangleArena {
+DEF ARENA RectangleArena {
   floorAppearance PBRAppearance {
     baseColor 0.425376 0.430426 0.430426
     roughness 1
@@ -44,7 +44,7 @@ DEF EPUCK E-puck {
   controller "light_controller"
   supervisor TRUE
 }
-Solid {
+DEF LIGHT Solid {
   translation 0.238001 0.232418 0.25
   children [
     Shape {
