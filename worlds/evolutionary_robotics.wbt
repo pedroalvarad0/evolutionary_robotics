@@ -8,8 +8,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.21294190830333184 -0.6426850726957807 0.7359426886804125 5.437134944446175
-  position -2.583423605310312 2.022993219981086 2.1050053407314584
+  orientation -0.2927334535218614 -0.491891473916574 0.8199694525269491 5.027555571615984
+  position -0.8725507185722825 1.498456534181575 1.4092221282394846
 }
 TexturedBackground {
 }
@@ -39,13 +39,13 @@ DEF ARENA RectangleArena {
   }
 }
 DEF EPUCK E-puck {
-  translation 0.24007 0.238043 -6.39625e-05
+  translation 0.402108 0.394141 -6.39625e-05
   rotation -3.3499799979126046e-05 1.1134499993062016e-05 0.9999999993768931 -2.216235307179586
-  controller "light_controller"
+  controller "save_light_path"
   supervisor TRUE
 }
 DEF LIGHT Solid {
-  translation 0.238001 0.232418 0.25
+  translation 0.397397 0.393948 0.25
   children [
     Shape {
       appearance PBRAppearance {

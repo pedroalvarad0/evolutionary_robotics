@@ -61,10 +61,7 @@ ARENA_LIMITS = {
     'z': 0.25  # altura fija de la luz
 }
 
-LIGHT_MOVE_INTERVAL = 5.0
-last_light_move_time = 0
-
-LIGHT_STEP_SIZE = 0.0015 # Tamaño del paso en cada movimiento
+LIGHT_STEP_SIZE = 0.0010 # Tamaño del paso en cada movimiento
 LIGHT_DIRECTION_CHANGE_INTERVAL = 3.0 # Cada cuántos segundos cambia de dirección
 last_direction_change = 0
 light_direction = [random.uniform(-1, 1), random.uniform(-1, 1), 0] # Dirección inicial aleatoria
@@ -144,9 +141,9 @@ best_sensor_value_history = []
 genetic_algorithm = GeneticAlgorithm(
     population_size=POPULATION_SIZE,
     generations=GENERATIONS,
-    crossover_rate=0.8,
-    mutation_rate=0.02,
-    representation="binary"
+    crossover_rate=0.9,
+    mutation_rate=0.05,
+    representation="real"
 )
 
 population = genetic_algorithm.generate_initial_population()
@@ -164,6 +161,7 @@ while robot.step(timestep) != -1:
     move_light_step(light_translation_field)
 
     if previous_time > current_time: # nuevo individuo
+        print("nuevo individuo")
         population[current_individual].fitness = genetic_algorithm.calculate_fitness(best_sensor_value_history)
 
         current_individual += 1
