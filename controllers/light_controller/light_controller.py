@@ -19,19 +19,6 @@ def normalize_sensor_values(sensor_values, min_value, max_value):
     normalized = [(x - min_value) / (max_value - min_value) for x in sensor_values]
     return normalized
 
-
-def normalize_angle(theta):
-    if theta < 0:
-        theta += 2 * np.pi
-    return theta
-
-
-def get_sensor_angles(start_angle, degrees):
-    radians = np.radians(degrees)
-    angles = (start_angle + radians) % (2 * np.pi)
-    return angles.tolist()
-
-
 MAX_SPEED = 6.28
 MAX_TIME = 30
 POPULATION_SIZE = 100
@@ -49,59 +36,9 @@ translation_field = robot_node.getField("translation")
 rotation_field = robot_node.getField("rotation")
 
 light_translation_field = light_node.getField("translation")
-arena_translation_field = arena_node.getField("translation")
-arena_translation = arena_translation_field.getSFVec3f()
-arena_size = 1.0 # 1x1 metros
-
-ARENA_LIMITS = {
-    'x_min': arena_translation[0] - arena_size/2,
-    'x_max': arena_translation[0] + arena_size/2,
-    'y_min': arena_translation[1] - arena_size/2,
-    'y_max': arena_translation[1] + arena_size/2,
-    'z': 0.25  # altura fija de la luz
-}
-
-LIGHT_STEP_SIZE = 0.0010 # Tamaño del paso en cada movimiento
-LIGHT_DIRECTION_CHANGE_INTERVAL = 3.0 # Cada cuántos segundos cambia de dirección
-last_direction_change = 0
-light_direction = [random.uniform(-1, 1), random.uniform(-1, 1), 0] # Dirección inicial aleatoria
-
-def normalize_direction(direction):
-    """Normaliza un vector de dirección"""
-    magnitude = (direction[0]**2 + direction[1]**2)**0.5
-    if magnitude == 0:
-        return [1, 0, 0]
-    return [direction[0]/magnitude, direction[1]/magnitude, 0]
-
-def move_light_step(light_translation_field):
-    """Mueve la luz un paso en la dirección actual, respetando los límites"""
-    current_pos = light_translation_field.getSFVec3f()
-    
-    # Calcular nueva posición
-    new_x = current_pos[0] + light_direction[0] * LIGHT_STEP_SIZE
-    new_y = current_pos[1] + light_direction[1] * LIGHT_STEP_SIZE
-    
-    # Verificar y ajustar límites
-    if new_x < ARENA_LIMITS['x_min']:
-        new_x = ARENA_LIMITS['x_min']
-        light_direction[0] *= -1  # Rebota en la pared
-    elif new_x > ARENA_LIMITS['x_max']:
-        new_x = ARENA_LIMITS['x_max']
-        light_direction[0] *= -1  # Rebota en la pared
-        
-    if new_y < ARENA_LIMITS['y_min']:
-        new_y = ARENA_LIMITS['y_min']
-        light_direction[1] *= -1  # Rebota en la pared
-    elif new_y > ARENA_LIMITS['y_max']:
-        new_y = ARENA_LIMITS['y_max']
-        light_direction[1] *= -1  # Rebota en la pared
-    
-    new_position = [new_x, new_y, ARENA_LIMITS['z']]
-    light_translation_field.setSFVec3f(new_position)
 
 INITIAL_POSITION = translation_field.getSFVec3f()
 INITIAL_ROTATION = rotation_field.getSFRotation()
-INITIAL_LIGHT_POSITION = light_translation_field.getSFVec3f()
 
 left_motor = robot.getDevice('left wheel motor')
 right_motor = robot.getDevice('right wheel motor')
@@ -115,20 +52,10 @@ right_motor.setVelocity(0.0)
 light_sensor_names = ["ls0", "ls1", "ls2", "ls3", "ls4", "ls5", "ls6", "ls7"]
 light_sensors = []
 
-degrees_array = [20, 45, 90, 150, 210, 270, 315, 340]
-
-distance_sensor_names = ["ps0", "ps1", "ps2", "ps3", "ps4", "ps5", "ps6", "ps7"]
-distance_sensors = []
-
 for i in range(len(light_sensor_names)):
     sensor = robot.getDevice(light_sensor_names[i])
     sensor.enable(timestep)
     light_sensors.append(sensor)
-
-for i in range(len(distance_sensor_names)):
-    sensor = robot.getDevice(distance_sensor_names[i])
-    sensor.enable(timestep)
-    distance_sensors.append(sensor)
 
 current_individual_last_position = translation_field.getSFVec3f()
 current_individual = 0
@@ -146,19 +73,17 @@ genetic_algorithm = GeneticAlgorithm(
     representation="real"
 )
 
+light_positions_path = np.load("light_positions.npy")
+current_light_step = 0
+
 population = genetic_algorithm.generate_initial_population()
 history = []
 
 while robot.step(timestep) != -1:
-    
     previous_time = current_time
     current_time = robot.getTime() % MAX_TIME
 
-    if current_time - last_direction_change >= LIGHT_DIRECTION_CHANGE_INTERVAL:
-        light_direction = normalize_direction([random.uniform(-1, 1), random.uniform(-1, 1), 0])
-        last_direction_change = current_time
-
-    move_light_step(light_translation_field)
+    light_translation_field.setSFVec3f(light_positions_path[current_light_step].tolist())
 
     if previous_time > current_time: # nuevo individuo
         print("nuevo individuo")
@@ -177,9 +102,6 @@ while robot.step(timestep) != -1:
 
         translation_field.setSFVec3f(INITIAL_POSITION)
         rotation_field.setSFRotation(INITIAL_ROTATION)
-        light_translation_field.setSFVec3f(INITIAL_LIGHT_POSITION)
-
-        light_direction = normalize_direction([random.uniform(-1, 1), random.uniform(-1, 1), 0])
 
         robot.step(timestep)
 
@@ -215,3 +137,6 @@ while robot.step(timestep) != -1:
 
     left_motor.setVelocity(left_motor_velocity)
     right_motor.setVelocity(right_motor_velocity)
+
+    current_light_step += 1
+    current_light_step %= len(light_positions_path)
