@@ -60,11 +60,22 @@ class GeneticAlgorithm:
         
         return 1 - best_sensor_value
     
-    def calculate_fitness(self, best_sensor_value_history):
-        sensor_data = np.array(best_sensor_value_history)
-        fitness_step = 1 - sensor_data
-        return np.sum(fitness_step)
+    # def calculate_fitness(self, best_sensor_value_history):
+    #     sensor_data = np.array(best_sensor_value_history)
+    #     fitness_step = 1 - sensor_data
+    #     return np.sum(fitness_step)
+
+    # def calculate_fitness(self, best_sensor_history):
+    #     sensor_data = np.array(best_sensor_history)
+    #     s0_frequency = np.sum(sensor_data == 0)
+
+    #     fitness = s0_frequency / len(sensor_data)
+    #     return fitness
     
+    def calculate_fitness(self, l0_value_history):
+        sensor_data = np.array(l0_value_history)
+        return np.sum(1 - sensor_data)
+
     def create_next_generation(self, population):
         population = sorted(population, key=lambda x: x.fitness, reverse=True)
         fittest_individual = population[0]
@@ -96,7 +107,7 @@ class GeneticAlgorithm:
 
         return fittest_individual, new_population
     
-    def tournament_selection(self, population, tournament_size=3):
+    def tournament_selection(self, population, tournament_size=10):
         tournament = list(np.random.choice(population, tournament_size))
         tournament.sort(key=lambda x: x.fitness, reverse=True)
         return tournament[0]
