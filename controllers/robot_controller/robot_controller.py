@@ -70,10 +70,16 @@ genetic_algorithm = GeneticAlgorithm(
 population = genetic_algorithm.generate_initial_population()
 history = []
 
-def fitness( final_robot_position, light_position):
-    distance_final_light = np.sqrt((final_robot_position[0] - light_position[0])**2 + (final_robot_position[1] - light_position[1])**2)
+# def fitness( final_robot_position, light_position):
+#     distance_final_light = np.sqrt((final_robot_position[0] - light_position[0])**2 + (final_robot_position[1] - light_position[1])**2)
 
-    return 1 / distance_final_light
+#     return 1 / distance_final_light
+
+def fitness(best_sensor_value_history):
+    sensor_data = np.array(best_sensor_value_history)
+    return np.sum(1 - sensor_data)
+
+best_sensor_value_history = []
 
 while robot.step(timestep) != -1:
     previous_time = current_time
@@ -81,13 +87,12 @@ while robot.step(timestep) != -1:
 
     if previous_time > current_time: # nuevo individuo
         #population[current_individual].fitness = genetic_algorithm.calculate_fitness(l0_value_history)
-        population[current_individual].fitness = fitness(translation_field.getSFVec3f(), LIGHT_POSITION)
+        #population[current_individual].fitness = fitness(translation_field.getSFVec3f(), LIGHT_POSITION)
+        population[current_individual].fitness = fitness(best_sensor_value_history)
 
         current_individual += 1
 
         best_sensor_value_history = []
-        best_sensor_history = []
-        l0_value_history = []
 
         left_motor.setVelocity(0.0)
         right_motor.setVelocity(0.0)
@@ -117,6 +122,8 @@ while robot.step(timestep) != -1:
     
     sensor_values = get_sensor_values(light_sensors)
     normalized_light_sensor_values = normalize_sensor_values(sensor_values, 0, 4095)
+
+    best_sensor_value_history.append(np.min(normalized_light_sensor_values))
     
     input_tensor = torch.tensor(normalized_light_sensor_values)
 
