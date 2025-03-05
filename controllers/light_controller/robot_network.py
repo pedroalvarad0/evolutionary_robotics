@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class RobotNetwork(nn.Module):
-    def __init__(self, input_size=8, hidden_size=10):
+    def __init__(self, input_size=8, hidden_size=5):
         super(RobotNetwork, self).__init__()
         # Capa de entrada (8 sensores) a capa oculta
         self.fc1 = nn.Linear(input_size, hidden_size)

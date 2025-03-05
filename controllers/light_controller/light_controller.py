@@ -56,8 +56,8 @@ arena_size = 1.0 # 1x1 metros
 ARENA_LIMITS = {
     'x_min': arena_translation[0] - arena_size/2,
     'x_max': arena_translation[0] + arena_size/2,
-    'y_min': arena_translation[2] - arena_size/2,
-    'y_max': arena_translation[2] + arena_size/2,
+    'y_min': arena_translation[1] - arena_size/2,
+    'y_max': arena_translation[1] + arena_size/2,
     'z': 0.25  # altura fija de la luz
 }
 
@@ -139,8 +139,7 @@ current_generation = 0
 current_time = 0
 previous_time = 0
 
-angles_history = []
-sensor_angles_history = []
+best_sensor_value_history = []
 
 genetic_algorithm = GeneticAlgorithm(
     population_size=POPULATION_SIZE,
@@ -158,10 +157,6 @@ while robot.step(timestep) != -1:
     previous_time = current_time
     current_time = robot.getTime() % MAX_TIME
 
-    # if current_time - last_light_move_time >= LIGHT_MOVE_INTERVAL:
-    #     light_translation_field.setSFVec3f([random.uniform(ARENA_LIMITS['x_min'], ARENA_LIMITS['x_max']), random.uniform(ARENA_LIMITS['y_min'], ARENA_LIMITS['y_max']), ARENA_LIMITS['z']])
-    #     last_light_move_time = current_time
-
     if current_time - last_direction_change >= LIGHT_DIRECTION_CHANGE_INTERVAL:
         light_direction = normalize_direction([random.uniform(-1, 1), random.uniform(-1, 1), 0])
         last_direction_change = current_time
@@ -169,11 +164,11 @@ while robot.step(timestep) != -1:
     move_light_step(light_translation_field)
 
     if previous_time > current_time: # nuevo individuo
-
-        print(f"angle history len: {len(angles_history)}")
-        print(f"sensor angle history len: {len(sensor_angles_history)}")
+        population[current_individual].fitness = genetic_algorithm.calculate_fitness(best_sensor_value_history)
 
         current_individual += 1
+
+        best_sensor_value_history = []
 
         left_motor.setVelocity(0.0)
         right_motor.setVelocity(0.0)
@@ -207,22 +202,11 @@ while robot.step(timestep) != -1:
     sensor_values = get_sensor_values(light_sensors)
     normalized_light_sensor_values = normalize_sensor_values(sensor_values, 0, 4095)
 
-    #print(rotation_field.getSFRotation())
-    rotation_angle = rotation_field.getSFRotation()[3]
-    rotation_angle = normalize_angle(rotation_angle)
-    sensor_angles = get_sensor_angles(rotation_angle, degrees_array)
-
-    angles_history.append(rotation_angle)
-    sensor_angles_history.append(sensor_angles)
-
-    # ------------------------------------------------------------
-
-    #print(normalized_light_sensor_values)
-    #print(light_translation_field.getSFVec3f())
+    best_sensor = np.argmin(normalized_light_sensor_values)
+    best_sensor_value = normalized_light_sensor_values[best_sensor]
+    best_sensor_value_history.append(best_sensor_value)
 
     input_tensor = torch.tensor(normalized_light_sensor_values)
-    fitness_step = genetic_algorithm.calculate_step_fitness(input_tensor)
-    population[current_individual].fitness += fitness_step
 
     directions = population[current_individual].network.forward(input_tensor)
     percentage_left_speed = directions[0].item()

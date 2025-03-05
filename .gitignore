@@ -29,3 +29,4 @@ tmp/
 __pycache__/
 *.jpg
 *.ipynb
+*.npy
