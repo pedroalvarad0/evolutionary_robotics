@@ -191,7 +191,8 @@ class GeneticAlgorithm:
 
     def crossover_binary(self, parent1, parent2):
         # Podemos elegir aleatoriamente el tipo de cruce o establecerlo como parámetro
-        crossover_type = np.random.choice(['one_point', 'two_point', 'uniform'])
+        #crossover_type = np.random.choice(['one_point', 'two_point', 'uniform'])
+        crossover_type = np.random.choice(['one_point', 'two_point'])
         
         if crossover_type == 'one_point':
             # Original one-point crossover
