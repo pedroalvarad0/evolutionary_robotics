@@ -40,13 +40,9 @@ DEF ARENA RectangleArena {
   }
 }
 DEF EPUCK E-puck {
-  hidden translation_1 0 0.02599999999995994 0.02
-  hidden rotation_1 0 1 0 5.507285943769656
-  hidden translation_2 0 -0.025999999999952495 0.02
-  hidden rotation_2 0 -1 0 4.651872202262087
   translation 0.299101 0.310231 -6.39598e-05
   rotation -0.0002861759684837381 -0.0003131794882515933 0.9999999100109576 -1.480745992596936
-  controller "manual_controller"
+  controller "move_box_controller"
   supervisor TRUE
 }
 DEF LIGHT Solid {
@@ -65,8 +61,8 @@ DEF LIGHT Solid {
     }
   ]
 }
-SolidBox {
-  translation -0.127732 0.0457186 0.0499961
+DEF BOX SolidBox {
+  translation 0.294071 -0.17356 0.0499961
   rotation 4.165971219286341e-07 1.0223890952781302e-09 0.9999999999999133 0.029624244206611416
   size 0.1 0.1 0.1
   appearance PBRAppearance {

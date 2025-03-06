@@ -2,6 +2,12 @@
 
 from controller import Robot, Keyboard
 
+def get_sensor_values(sensors):
+    sensor_values = []
+    for sensor in sensors:
+        sensor_values.append(sensor.getValue())
+    return sensor_values
+
 # Create the Robot instance
 robot = Robot()
 
@@ -28,10 +34,21 @@ right_motor.setVelocity(0.0)
 MAX_SPEED = 6.28  # Maximum speed for the motors
 TURN_COEFFICIENT = 0.5  # Coefficient to reduce speed while turning
 
+distance_sensor_names = ["ps0", "ps1", "ps2", "ps3", "ps4", "ps5", "ps6", "ps7"]
+distance_sensors = []
+
+for i in range(len(distance_sensor_names)):
+    sensor = robot.getDevice(distance_sensor_names[i])
+    sensor.enable(timestep)
+    distance_sensors.append(sensor)
+
 # Main loop
 while robot.step(timestep) != -1:
     # Get the pressed key
     key = keyboard.getKey()
+
+    sensor_values = get_sensor_values(distance_sensors)
+    print(sensor_values)
     
     # Initialize motor speeds
     left_speed = 0.0
