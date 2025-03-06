@@ -4,12 +4,13 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/floors/protos/RectangleArena.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/gctronic/e-puck/protos/E-puck.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/solids/protos/SolidBox.proto"
 
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.3256964114551712 -0.8398569934457604 0.4342373522918912 4.825259233783211
-  position -0.6451801908248789 0.8083513657270908 3.796037097768251
+  orientation -0.3169202147710778 -0.4416333412991188 0.8393578315131335 4.868471839710532
+  position -0.6954456752096554 2.1039481561169855 2.2570627217592087
 }
 TexturedBackground {
 }
@@ -39,9 +40,13 @@ DEF ARENA RectangleArena {
   }
 }
 DEF EPUCK E-puck {
-  translation 0.255871 0.265854 -6.39625e-05
-  rotation -3.3499799979126046e-05 1.1134499993062016e-05 0.9999999993768931 -2.216235307179586
-  controller "robot_controller"
+  hidden translation_1 0 0.02599999999995994 0.02
+  hidden rotation_1 0 1 0 5.507285943769656
+  hidden translation_2 0 -0.025999999999952495 0.02
+  hidden rotation_2 0 -1 0 4.651872202262087
+  translation 0.299101 0.310231 -6.39598e-05
+  rotation -0.0002861759684837381 -0.0003131794882515933 0.9999999100109576 -1.480745992596936
+  controller "manual_controller"
   supervisor TRUE
 }
 DEF LIGHT Solid {
@@ -59,4 +64,17 @@ DEF LIGHT Solid {
       intensity 2
     }
   ]
+}
+SolidBox {
+  translation -0.127732 0.0457186 0.0499961
+  rotation 4.165971219286341e-07 1.0223890952781302e-09 0.9999999999999133 0.029624244206611416
+  size 0.1 0.1 0.1
+  appearance PBRAppearance {
+    baseColor 0.491066 0.709255 1
+    roughness 0.5
+    metalness 0
+  }
+  physics Physics {
+    mass 0.01
+  }
 }
