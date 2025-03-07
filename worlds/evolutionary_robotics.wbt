@@ -9,8 +9,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.3169202147710778 -0.4416333412991188 0.8393578315131335 4.868471839710532
-  position -0.6954456752096554 2.1039481561169855 2.2570627217592087
+  orientation -0.38045744789615316 -0.4316488277016444 0.817882277521736 4.637666956956176
+  position -0.3508960868660064 1.921767307916705 2.4155356372751546
 }
 TexturedBackground {
 }
@@ -42,7 +42,7 @@ DEF ARENA RectangleArena {
 DEF EPUCK E-puck {
   translation 0.299101 0.310231 -6.39598e-05
   rotation -0.0002861759684837381 -0.0003131794882515933 0.9999999100109576 -1.480745992596936
-  controller "move_box_controller"
+  controller "e-puck"
   supervisor TRUE
 }
 DEF LIGHT Solid {
@@ -73,4 +73,9 @@ DEF BOX SolidBox {
   physics Physics {
     mass 0.01
   }
+}
+DEF EPUCK1 E-puck {
+  translation 0.00897575 0.297886 -1.13375e-16
+  rotation 0 0 1 -1.5707953071795862
+  name "e-puck1"
 }
