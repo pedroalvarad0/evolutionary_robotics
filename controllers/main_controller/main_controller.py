@@ -54,6 +54,15 @@ GENERATIONS = 20
 left_motor = robot.getDevice('left wheel motor')
 right_motor = robot.getDevice('right wheel motor')
 
+if robot_name == "main1":
+    communication = robot.getDevice("emitter")
+    channel = communication.getChannel()
+elif robot_name == "main2":
+    communication = robot.getDevice("receiver")
+    communication.enable(timestep)
+
+#receiver = robot.getDevice("receiver")
+
 left_motor.setPosition(float('inf'))
 right_motor.setPosition(float('inf'))
 
@@ -63,10 +72,21 @@ right_motor.setVelocity(0.0)
 distance_sensor_names = ["ps0", "ps1", "ps2", "ps3", "ps4", "ps5", "ps6", "ps7"]
 distance_sensors = []
 
-for i in range(len(distance_sensor_names)):
-    sensor = robot.getDevice(distance_sensor_names[i])
-    sensor.enable(timestep)
-    distance_sensors.append(sensor)
+light_sensor_names = ["ls0", "ls1", "ls2", "ls3", "ls4", "ls5", "ls6", "ls7"]
+light_sensors = []
+
+if robot_name == "main1":
+    for i in range(len(light_sensor_names)):
+        sensor = robot.getDevice(light_sensor_names[i])
+        sensor.enable(timestep)
+        light_sensors.append(sensor)
+
+if robot_name == "main2":
+    for i in range(len(distance_sensor_names)):
+        sensor = robot.getDevice(distance_sensor_names[i])
+        sensor.enable(timestep)
+        distance_sensors.append(sensor)
+
 
 current_individual = 0
 current_generation = 0
@@ -87,9 +107,9 @@ population = genetic_algorithm.generate_initial_population()
 # los robots deben de estar cerca para mover la caja juntos
 def fitness(box_position, light_position, robot_position, other_robot_position):
     distance_to_light = np.sqrt((box_position[0] - light_position[0])**2 + (box_position[1] - light_position[1])**2)
-    distance_between_robots = np.sqrt((robot_position[0] - other_robot_position[0])**2 + (robot_position[1] - other_robot_position[1])**2)
-
-    return 1000 *((1 / distance_to_light) + (1 / distance_between_robots))
+    #distance_between_robots = np.sqrt((robot_position[0] - other_robot_position[0])**2 + (robot_position[1] - other_robot_position[1])**2)
+    
+    return 1000 * (1 / distance_to_light) #+ 200 * (1 / distance_between_robots)
 
 while robot.step(timestep) != -1:
     previous_time = current_time
@@ -97,7 +117,8 @@ while robot.step(timestep) != -1:
 
     if previous_time > current_time: # nuevo individuo
         # population[current_individual].fitness = genetic_algorithm.calculate_fitness(l0_value_history)
-        population[current_individual].fitness = fitness(translation_field_box.getSFVec3f(), LIGHT_POSITION, translation_field.getSFVec3f(), other_robot_node.getField("translation").getSFVec3f())
+        #population[current_individual].fitness = fitness(translation_field_box.getSFVec3f(), LIGHT_POSITION, translation_field.getSFVec3f(), other_robot_node.getField("translation").getSFVec3f())
+        population[current_individual].fitness = 0
         current_individual += 1
 
         left_motor.setVelocity(0.0)
@@ -130,8 +151,23 @@ while robot.step(timestep) != -1:
             if current_generation == GENERATIONS:
                 pass # TODO: save best individual
 
-    sensor_values = get_sensor_values(distance_sensors)
-    normalized_sensor_values = normalize_sensor_values(sensor_values, 0, 1000)
+    if robot_name == "main1":
+        sensor_values = get_sensor_values(light_sensors)
+        normalized_sensor_values = normalize_sensor_values(sensor_values, 0, 4095)
+    elif robot_name == "main2":
+        sensor_values = get_sensor_values(distance_sensors)
+        normalized_sensor_values = normalize_sensor_values(sensor_values, 0, 1000)
+
+    #print(robot_name, normalized_sensor_values)
+
+    if robot_name == "main1":
+        most_light_sensor = np.argmin(normalized_sensor_values)
+        communication.send(str(most_light_sensor))
+    elif robot_name == "main2":
+        if communication.getQueueLength() > 0:
+            message = communication.getString()
+            print(f"Received message: ls{message}")
+            communication.nextPacket()
 
     input_tensor = torch.tensor(normalized_sensor_values)
 
