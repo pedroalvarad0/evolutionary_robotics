@@ -163,11 +163,13 @@ class GeneticAlgorithm:
     def mutate_real_valued(self, individual):
         std = (1 - (-1)) / 6
 
-        mutation_mask = torch.rand(len(individual.weights)) < self.mutation_rate
-        mutation_values = torch.randn(len(individual.weights)) * std
+        # Use numpy instead of torch for mutation operations
+        mutation_mask = np.random.random(len(individual.weights)) < self.mutation_rate
+        mutation_values = np.random.normal(0, std, len(individual.weights))
 
         weights_array = np.array(individual.weights)
-        weights_array += mutation_mask * mutation_values
+        # Apply mutation using numpy operations
+        weights_array = weights_array + (mutation_mask * mutation_values)
         individual.weights = weights_array.tolist()
     
     def mutate_binary(self, individual):

@@ -155,7 +155,7 @@ if robot_name == "main1":
         generations=GENERATIONS,
         crossover_rate=0.9,
         mutation_rate=0.05,
-        representation="binary"
+        representation="real"
     )
     population = genetic_algorithm.generate_initial_population()
 
@@ -191,9 +191,12 @@ if robot_name == "main1":
             fitness_main1, fitness_main2 = fitness(avg_camera_color_history, light_history)
 
             # media armonica
-            population[current_individual].fitness = (2 * fitness_main1 * fitness_main2) / (fitness_main1 + fitness_main2 + 0.01)
+            #population[current_individual].fitness = (2 * fitness_main1 * fitness_main2) / (fitness_main1 + fitness_main2 + 0.01)
+
+            # Media ponderada con penalización de desbalance
+            population[current_individual].fitness = ((fitness_main1 + fitness_main2) / 2) - (0.5) * abs(fitness_main1 - fitness_main2)
             
-            #print(f"[{current_individual}]fitness_main1: {fitness_main1}, fitness_main2: {fitness_main2}, fitness: {population[current_individual].fitness}")
+            print(f"[{current_individual}]fitness_main1: {fitness_main1}, fitness_main2: {fitness_main2}, fitness: {population[current_individual].fitness}")
 
             current_individual += 1
             
