@@ -1,4 +1,3 @@
-import torch
 import numpy as np
 from robot_network import RobotNetwork
 import struct
