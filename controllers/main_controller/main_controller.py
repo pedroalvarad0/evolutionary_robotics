@@ -155,14 +155,17 @@ if robot_name == "main1":
         generations=GENERATIONS,
         crossover_rate=0.9,
         mutation_rate=0.05,
+        representation="binary"
     )
     population = genetic_algorithm.generate_initial_population()
 
+    weights_network1, weights_network2 = population[0].get_weights()
+
     # cargar pesos iniciales
-    load_robot_weights(robot_network, population[0].weights_robot1)
+    load_robot_weights(robot_network, weights_network1)
     
     # enviar pesos iniciales a main2
-    custom_data_field_main2.setSFString(str(population[0].weights_robot2))
+    custom_data_field_main2.setSFString(str(weights_network2))
     robot.step(timestep)
 
     current_time = 0
@@ -215,8 +218,9 @@ if robot_name == "main1":
             rotation_field_box.setSFRotation(INITIAL_ROTATION_BOX)
 
             if current_individual < POPULATION_SIZE:
-                load_robot_weights(robot_network, population[current_individual].weights_robot1)
-                custom_data_field_main2.setSFString(str(population[current_individual].weights_robot2))
+                weights_network1, weights_network2 = population[current_individual].get_weights()
+                load_robot_weights(robot_network, weights_network1)
+                custom_data_field_main2.setSFString(str(weights_network2))
             
             light_history = {
                 "main1": [],
@@ -241,8 +245,9 @@ if robot_name == "main1":
                 current_generation += 1
 
                 # send nuevos pesos a main2
-                custom_data_field_main2.setSFString(str(population[0].weights_robot2))
-                load_robot_weights(robot_network, population[0].weights_robot1)
+                weights_network1, weights_network2 = population[0].get_weights()
+                custom_data_field_main2.setSFString(str(weights_network2))
+                load_robot_weights(robot_network, weights_network1)
 
 
                 robot.step(timestep)
