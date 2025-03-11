@@ -4,38 +4,72 @@ from dataclasses import dataclass
 from robot_network import RobotNetwork
 from torch.distributions.uniform import Uniform
 import struct
+import torch.nn as nn
+
+def generate_random_weights(input_size=11, hidden_size=15, output_size=2):
+    fc1 = nn.Linear(input_size, hidden_size)
+    fc2 = nn.Linear(hidden_size, output_size)
+
+    weights_list = []
+
+    for param in fc1.parameters():
+        weights = param.data.numpy().flatten().tolist()
+        weights_list.extend(weights)
+
+    for param in fc2.parameters():
+        weights = param.data.numpy().flatten().tolist()
+        weights_list.extend(weights)
+
+    return weights_list
+
 
 class Individual:
-    def __init__(self, network):
+    def __init__(self, weights_robot1, weights_robot2):
         self.fitness = 0.0
-        self.network = network
-        self.binary_weights = self.weights_to_binary()
 
-    def weights_to_binary(self):
+        self.weights_robot1 = weights_robot1
+        self.weights_robot2 = weights_robot2
+        
+        self.binary_weights_robot1 = self.weights_to_binary(self.weights_robot1)
+        self.binary_weights_robot2 = self.weights_to_binary(self.weights_robot2)
+
+    def weights_to_binary(self, weights):
         binary_representation = []
-        for param in self.network.parameters():
-            weights = param.data.numpy().flatten()
-            for weight in weights:
-                binary = format(struct.unpack('!I', struct.pack('!f', weight))[0], '032b')
-                binary_representation.extend(list(binary))
+        for weight in weights:
+            binary = format(struct.unpack('!I', struct.pack('!f', weight))[0], '032b')
+            binary_representation.extend(list(binary))
         return binary_representation
 
-    def binary_to_weights(self):
+    def binary_to_weights(self, binary_weights):
         weights = []
-        for i in range(0, len(self.binary_weights), 32):
-            binary_weight = ''.join(self.binary_weights[i:i+32])
+        for i in range(0, len(binary_weights), 32):
+            binary_weight = ''.join(binary_weights[i:i+32])
             float_weight = struct.unpack('!f', struct.pack('!I', int(binary_weight, 2)))[0]
             weights.append(float_weight)
         return weights
     
+    def update_weights(self):
+        self.weights_robot1 = self.binary_to_weights(self.binary_weights_robot1)
+        self.weights_robot2 = self.binary_to_weights(self.binary_weights_robot2)
+    
     def update_network_weights(self):
-        weights = self.binary_to_weights()
+        weights_robot1 = self.binary_to_weights(self.binary_weights_robot1)
+        weights_robot2 = self.binary_to_weights(self.binary_weights_robot2)
+
         idx = 0
-        for param in self.network.parameters():
+        for param in self.network_robot1.parameters():
             layer_size = param.data.numel()
-            layer_weights = weights[idx:idx + layer_size]
+            layer_weights = weights_robot1[idx:idx + layer_size]
             param.data = torch.tensor(layer_weights).reshape(param.data.shape)
             idx += layer_size
+
+        idx = 0
+        for param in self.network_robot2.parameters():
+            layer_size = param.data.numel()
+            layer_weights = weights_robot2[idx:idx + layer_size]
+            param.data = torch.tensor(layer_weights).reshape(param.data.shape)
+            idx += layer_size
+
 
 class GeneticAlgorithm:
     def __init__(self, population_size=100, generations=100, crossover_rate=0.8, mutation_rate=0.02, representation="binary"):
@@ -46,35 +80,10 @@ class GeneticAlgorithm:
         self.representation = representation
 
     def generate_random_individual(self):
-        return Individual(network=RobotNetwork())
+        return Individual(weights_robot1=generate_random_weights(), weights_robot2=generate_random_weights())
     
     def generate_initial_population(self):
         return [self.generate_random_individual() for _ in range(self.population_size)]
-    
-    def calculate_step_fitness(self, normalized_light_sensor_values):
-        best_sensor_value = min(normalized_light_sensor_values)
-
-        idx = np.argmin(normalized_light_sensor_values)
-
-        #print(f"ls{idx} detectando mayor valor de luz {best_sensor_value}")
-        
-        return 1 - best_sensor_value
-    
-    # def calculate_fitness(self, best_sensor_value_history):
-    #     sensor_data = np.array(best_sensor_value_history)
-    #     fitness_step = 1 - sensor_data
-    #     return np.sum(fitness_step)
-
-    # def calculate_fitness(self, best_sensor_history):
-    #     sensor_data = np.array(best_sensor_history)
-    #     s0_frequency = np.sum(sensor_data == 0)
-
-    #     fitness = s0_frequency / len(sensor_data)
-    #     return fitness
-    
-    def calculate_fitness(self, l0_value_history):
-        sensor_data = np.array(l0_value_history)
-        return np.sum(1 - sensor_data)
 
     def create_next_generation(self, population):
         population = sorted(population, key=lambda x: x.fitness, reverse=True)
@@ -139,26 +148,64 @@ class GeneticAlgorithm:
         return child
     
     def two_point_crossover(self, parent1, parent2):
-        num_weights = len(parent1.binary_weights) // 32
+        num_weights = len(parent1.binary_weights_robot1) // 32
         # Ensure points are aligned with 32-bit boundaries and point1 < point2
-        point1 = np.random.randint(0, num_weights - 1) * 32
-        point2 = np.random.randint(point1//32 + 1, num_weights) * 32
+        point1_robot1 = np.random.randint(0, num_weights - 1) * 32
+        point2_robot1 = np.random.randint(point1_robot1//32 + 1, num_weights) * 32
 
-        child1_binary = (parent1.binary_weights[:point1] + 
-                        parent2.binary_weights[point1:point2] + 
-                        parent1.binary_weights[point2:])
-        child2_binary = (parent2.binary_weights[:point1] + 
-                        parent1.binary_weights[point1:point2] + 
-                        parent2.binary_weights[point2:])
+        point1_robot2 = np.random.randint(0, num_weights - 1) * 32
+        point2_robot2 = np.random.randint(point1_robot2//32 + 1, num_weights) * 32
 
-        child1 = Individual(RobotNetwork())
-        child2 = Individual(RobotNetwork())
+        child1_binary_robot1 = (parent1.binary_weights_robot1[:point1_robot1] + 
+                        parent2.binary_weights_robot1[point1_robot1:point2_robot1] + 
+                        parent1.binary_weights_robot1[point2_robot1:])
+        child2_binary_robot1 = (parent2.binary_weights_robot1[:point1_robot1] + 
+                        parent1.binary_weights_robot1[point1_robot1:point2_robot1] + 
+                        parent2.binary_weights_robot1[point2_robot1:])
+        
+        child1_binary_robot2 = (parent1.binary_weights_robot2[:point1_robot2] + 
+                        parent2.binary_weights_robot2[point1_robot2:point2_robot2] + 
+                        parent1.binary_weights_robot2[point2_robot2:])
+        child2_binary_robot2 = (parent2.binary_weights_robot2[:point1_robot2] + 
+                        parent1.binary_weights_robot2[point1_robot2:point2_robot2] + 
+                        parent2.binary_weights_robot2[point2_robot2:])
 
-        child1.binary_weights = child1_binary
-        child2.binary_weights = child2_binary
+        child1 = Individual(weights_robot1=generate_random_weights(), weights_robot2=generate_random_weights())
+        child2 = Individual(weights_robot1=generate_random_weights(), weights_robot2=generate_random_weights())
 
-        child1.update_network_weights()
-        child2.update_network_weights()
+        child1.binary_weights_robot1 = child1_binary_robot1
+        child1.binary_weights_robot2 = child1_binary_robot2
+
+        child2.binary_weights_robot1 = child2_binary_robot1
+        child2.binary_weights_robot2 = child2_binary_robot2
+
+        child1.update_weights()
+        child2.update_weights()
+
+        return child1, child2
+    
+    def one_point_crossover(self, parent1, parent2):
+        num_weights = len(parent1.binary_weights_robot1) // 32
+        crossover_point_robot1 = np.random.randint(0, num_weights) * 32
+        crossover_point_robot2 = np.random.randint(0, num_weights) * 32
+        
+        child1_binary_robot1 = parent1.binary_weights_robot1[:crossover_point_robot1] + parent2.binary_weights_robot1[crossover_point_robot1:]
+        child2_binary_robot1 = parent2.binary_weights_robot1[:crossover_point_robot1] + parent1.binary_weights_robot1[crossover_point_robot1:]
+
+        child1_binary_robot2 = parent1.binary_weights_robot2[:crossover_point_robot2] + parent2.binary_weights_robot2[crossover_point_robot2:]
+        child2_binary_robot2 = parent2.binary_weights_robot2[:crossover_point_robot2] + parent1.binary_weights_robot2[crossover_point_robot2:]
+
+        child1 = Individual(weights_robot1=generate_random_weights(), weights_robot2=generate_random_weights())
+        child2 = Individual(weights_robot1=generate_random_weights(), weights_robot2=generate_random_weights())
+
+        child1.binary_weights_robot1 = child1_binary_robot1
+        child1.binary_weights_robot2 = child1_binary_robot2
+
+        child2.binary_weights_robot1 = child2_binary_robot1
+        child2.binary_weights_robot2 = child2_binary_robot2
+
+        child1.update_weights()
+        child2.update_weights()
 
         return child1, child2
 
@@ -190,27 +237,11 @@ class GeneticAlgorithm:
         return child1, child2
 
     def crossover_binary(self, parent1, parent2):
-        # Podemos elegir aleatoriamente el tipo de cruce o establecerlo como parámetro
-        #crossover_type = np.random.choice(['one_point', 'two_point', 'uniform'])
         crossover_type = np.random.choice(['one_point', 'two_point'])
         
         if crossover_type == 'one_point':
             # Original one-point crossover
-            num_weights = len(parent1.binary_weights) // 32
-            crossover_point = np.random.randint(0, num_weights) * 32
-            child1_binary = parent1.binary_weights[:crossover_point] + parent2.binary_weights[crossover_point:]
-            child2_binary = parent2.binary_weights[:crossover_point] + parent1.binary_weights[crossover_point:]
-
-            child1 = Individual(RobotNetwork())
-            child2 = Individual(RobotNetwork())
-
-            child1.binary_weights = child1_binary
-            child2.binary_weights = child2_binary
-
-            child1.update_network_weights()
-            child2.update_network_weights()
-
-            return child1, child2
+            return self.one_point_crossover(parent1, parent2)
         elif crossover_type == 'two_point':
             return self.two_point_crossover(parent1, parent2)
         else:  # uniform
@@ -240,19 +271,40 @@ class GeneticAlgorithm:
         individual.network.fc2.bias.data += mutation_mask_fc2_bias * mutation_values_fc2_bias
     
     def mutate_binary(self, individual):
-        num_weights = len(individual.binary_weights) // 32
-        for i in range(num_weights):
+        num_weights_robot1 = len(individual.binary_weights_robot1) // 32
+        num_weights_robot2 = len(individual.binary_weights_robot2) // 32
+
+        for i in range(num_weights_robot1):
             if np.random.random() < self.mutation_rate:
                 # Get the 32-bit group
                 start_idx = i * 32
                 end_idx = start_idx + 32
-                weight_bits = individual.binary_weights[start_idx:end_idx]
+                weight_bits = individual.binary_weights_robot1[start_idx:end_idx]
                 
                 # Generate a new random float and convert it to binary
                 new_weight = np.random.uniform(-1, 1)
                 new_binary = format(struct.unpack('!I', struct.pack('!f', new_weight))[0], '032b')
                 
                 # Replace the old 32-bit group with the new one
-                individual.binary_weights[start_idx:end_idx] = list(new_binary)
+                individual.binary_weights_robot1[start_idx:end_idx] = list(new_binary)
         
-        individual.update_network_weights()
+        for i in range(num_weights_robot2):
+            if np.random.random() < self.mutation_rate:
+                start_idx = i * 32
+                end_idx = start_idx + 32
+                weight_bits = individual.binary_weights_robot2[start_idx:end_idx]
+
+                new_weight = np.random.uniform(-1, 1)
+                new_binary = format(struct.unpack('!I', struct.pack('!f', new_weight))[0], '032b')
+                
+                individual.binary_weights_robot2[start_idx:end_idx] = list(new_binary)
+
+        # for i in range(num_weights_robot1):
+        #     if np.random.random() < self.mutation_rate:
+        #         individual.binary_weights_robot1[i] = '1' if individual.binary_weights_robot1[i] == '0' else '0'
+
+        # for i in range(num_weights_robot2):
+        #     if np.random.random() < self.mutation_rate:
+        #         individual.binary_weights_robot2[i] = '1' if individual.binary_weights_robot2[i] == '0' else '0'
+
+        individual.update_weights()

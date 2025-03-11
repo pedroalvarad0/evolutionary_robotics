@@ -1,6 +1,7 @@
 """manual_controller controller."""
 
 from controller import Robot, Keyboard
+import numpy as np
 
 def get_sensor_values(sensors):
     sensor_values = []
@@ -8,8 +9,37 @@ def get_sensor_values(sensors):
         sensor_values.append(sensor.getValue())
     return sensor_values
 
+def get_np_image_from_camera(camera):
+    image = camera.getImage()
+    # Obtener dimensiones de la imagen
+    width = camera.getWidth()
+    height = camera.getHeight()
+
+    image_array = np.frombuffer(image, np.uint8).reshape((height, width, 4))
+    image_rgb = image_array[:, :, :3][:, :, ::-1]  # Convertir BGRA a RGB
+    # print("Forma de la imagen:", image_array.shape)
+
+    return image_rgb
+
+def calculate_average_color(image):
+    """
+    Calcula el color promedio de una imagen RGB.
+    
+    Args:
+        image: Array numpy de forma (height, width, 3) con valores RGB
+        
+    Returns:
+        tuple: Color promedio en formato (R, G, B)
+    """
+    # Promedia los valores a lo largo de los ejes height y width
+    avg_color = np.mean(image, axis=(0,1))
+    # Redondea los valores a enteros
+    avg_color = np.round(avg_color).astype(int)
+    return tuple(avg_color)
+
 # Create the Robot instance
 robot = Robot()
+robot_name = robot.getName()
 
 # Get the time step of the current world
 timestep = int(robot.getBasicTimeStep())
@@ -29,6 +59,9 @@ right_motor.setPosition(float('inf'))
 # Set the initial velocity to 0
 left_motor.setVelocity(0.0)
 right_motor.setVelocity(0.0)
+
+camera = robot.getDevice('camera')
+camera.enable(timestep)
 
 # Constants for motor speeds
 MAX_SPEED = 6.28  # Maximum speed for the motors
@@ -75,4 +108,9 @@ while robot.step(timestep) != -1:
     # Set the motor velocities
     left_motor.setVelocity(left_speed)
     right_motor.setVelocity(right_speed)
+
+    image = camera.getImage()
+    image_rgb = get_np_image_from_camera(camera)
+    avg_camera_color = calculate_average_color(image_rgb)
+    print(f"avg_camera_color({robot_name}):", avg_camera_color)
 
