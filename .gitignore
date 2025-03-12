@@ -31,3 +31,4 @@ __pycache__/
 *.ipynb
 *.npy
 *.json
+*.txt

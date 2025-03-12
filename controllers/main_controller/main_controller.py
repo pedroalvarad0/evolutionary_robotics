@@ -105,6 +105,10 @@ def fitness(avg_camera_color_history, light_history):
 
 # main loop
 if robot_name == "main1":
+
+    # camera2 = robot.getDevice("camera2")
+    # camera2.enable(timestep)
+
     # obtener nodos de los robots
     robot_main1_node = robot.getFromDef("MAIN1")
     robot_main2_node = robot.getFromDef("MAIN2")
@@ -196,7 +200,7 @@ if robot_name == "main1":
             # Media ponderada con penalización de desbalance
             population[current_individual].fitness = ((fitness_main1 + fitness_main2) / 2) - (0.5) * abs(fitness_main1 - fitness_main2)
             
-            print(f"[{current_individual}]fitness_main1: {fitness_main1}, fitness_main2: {fitness_main2}, fitness: {population[current_individual].fitness}")
+            #print(f"[{current_individual}]fitness_main1: {fitness_main1}, fitness_main2: {fitness_main2}, fitness: {population[current_individual].fitness}")
 
             current_individual += 1
             
