@@ -3,6 +3,7 @@
 from controller import Supervisor
 from robot_network import RobotNetwork
 from genetic_algorithm import GeneticAlgorithm
+from utils import read_json_to_dict
 import torch
 import enum
 import json
@@ -65,39 +66,43 @@ timestep = int(robot.getBasicTimeStep())
 
 MAX_SPEED = 6.28
 MAX_TIME = 30
-POPULATION_SIZE = 20
-GENERATIONS = 5
 
-mode = Mode.TRAINING
+robot_node = robot.getFromDef("MAIN1")
+light_node = robot.getFromDef("LIGHT")
+
+translation_field = robot_node.getField("translation")
+rotation_field = robot_node.getField("rotation")
+
+light_translation_field = light_node.getField("translation")
+
+INITIAL_POSITION = translation_field.getSFVec3f()
+INITIAL_ROTATION = rotation_field.getSFRotation()
+
+light_position = light_translation_field.getSFVec3f()
+
+left_motor = robot.getDevice('left wheel motor')
+right_motor = robot.getDevice('right wheel motor')
+
+left_motor.setPosition(float('inf'))
+right_motor.setPosition(float('inf'))
+
+left_motor.setVelocity(0.0)
+right_motor.setVelocity(0.0)
+
+light_sensor_names = ["ls0", "ls1", "ls2", "ls3", "ls4", "ls5", "ls6", "ls7"]
+light_sensors = []
+
+for i in range(len(light_sensor_names)):
+    sensor = robot.getDevice(light_sensor_names[i])
+    sensor.enable(timestep)
+    light_sensors.append(sensor)
+
+mode = Mode.EXECUTION
 
 if mode == Mode.TRAINING:
-    robot_node = robot.getFromDef("MAIN1")
-    light_node = robot.getFromDef("LIGHT")
 
-    translation_field = robot_node.getField("translation")
-    rotation_field = robot_node.getField("rotation")
-
-    INITIAL_POSITION = translation_field.getSFVec3f()
-    INITIAL_ROTATION = rotation_field.getSFRotation()
-
-    LIGHT_POSITION = translation_field.getSFVec3f()
-
-    left_motor = robot.getDevice('left wheel motor')
-    right_motor = robot.getDevice('right wheel motor')
-
-    left_motor.setPosition(float('inf'))
-    right_motor.setPosition(float('inf'))
-
-    left_motor.setVelocity(0.0)
-    right_motor.setVelocity(0.0)
-
-    light_sensor_names = ["ls0", "ls1", "ls2", "ls3", "ls4", "ls5", "ls6", "ls7"]
-    light_sensors = []
-
-    for i in range(len(light_sensor_names)):
-        sensor = robot.getDevice(light_sensor_names[i])
-        sensor.enable(timestep)
-        light_sensors.append(sensor)
+    POPULATION_SIZE = 100
+    GENERATIONS = 25
 
     current_individual = 0
     current_generation = 0
@@ -134,7 +139,7 @@ if mode == Mode.TRAINING:
 
         if previous_time > current_time: # nuevo individuo
             population[current_individual].fitness = fitness(light_history)
-            print(f"Generation: {current_generation}, Individual: {current_individual}, Fitness: {population[current_individual].fitness}")
+            #print(f"Generation: {current_generation}, Individual: {current_individual}, Fitness: {population[current_individual].fitness}")
 
             current_individual += 1
 
@@ -169,13 +174,41 @@ if mode == Mode.TRAINING:
 
                 robot.step(timestep)
                 if current_generation == GENERATIONS:
-                    save_data(INITIAL_POSITION, INITIAL_ROTATION, LIGHT_POSITION, ga_history)
+                    save_data(INITIAL_POSITION, INITIAL_ROTATION, light_position, ga_history)
 
         light_sensor_values = get_sensor_values(light_sensors)
         normalized_light_sensor_values = normalize_sensor_values(light_sensor_values, 0, 4096)
         
         light_history.append(normalized_light_sensor_values)
 
+        normalized_sensor_values = torch.tensor(normalized_light_sensor_values)
+        directions = robot_network.forward(normalized_sensor_values)
+        percentage_left_speed = directions[0].item()
+        percentage_right_speed = directions[1].item()
+
+        left_motor_velocity = percentage_left_speed * MAX_SPEED
+        right_motor_velocity = percentage_right_speed * MAX_SPEED
+
+        left_motor.setVelocity(left_motor_velocity)
+        right_motor.setVelocity(right_motor_velocity)
+        
+elif mode == Mode.EXECUTION:
+    file_path = "ga_history_20099ce8-c16c-4445-8949-d4e09cbd9028.json"
+    data_dict = read_json_to_dict(file_path)
+
+    robot_network = RobotNetwork()
+    weights_network = data_dict["individuals"][-1]["weights"]
+    load_robot_weights(robot_network, weights_network)
+
+    translation_field.setSFVec3f(data_dict["world_info"]["initial_position"])
+    rotation_field.setSFRotation(data_dict["world_info"]["initial_rotation"])
+
+    light_translation_field.setSFVec3f(data_dict["world_info"]["light_position"])
+
+    while robot.step(timestep) != -1:
+        light_sensor_values = get_sensor_values(light_sensors)
+        normalized_light_sensor_values = normalize_sensor_values(light_sensor_values, 0, 4096)
+        
         normalized_sensor_values = torch.tensor(normalized_light_sensor_values)
         directions = robot_network.forward(normalized_sensor_values)
         percentage_left_speed = directions[0].item()
