@@ -140,7 +140,7 @@ for i in range(len(distance_sensor_names)):
 communication = robot.getDevice("receiver")
 communication.enable(timestep)
 
-mode = Mode.TRANSFER_LEARNING
+mode = Mode.EXECUTION
 
 if mode == Mode.TRAINING:
 
@@ -353,6 +353,43 @@ elif mode == Mode.TRANSFER_LEARNING:
 
         box_position = translation_field_box.getSFVec3f()
         box_positions.append([box_position[0], box_position[1]])
+
+        input_tensor = torch.tensor(normalized_distance_sensor_values)
+        input_tensor = torch.cat((input_tensor, torch.tensor([light_finder_x, light_finder_y])))
+
+        directions = robot_network.forward(input_tensor)
+        percentage_left_speed = directions[0].item()
+        percentage_right_speed = directions[1].item()
+
+        left_motor_velocity = percentage_left_speed * MAX_SPEED
+        right_motor_velocity = percentage_right_speed * MAX_SPEED
+        
+        left_motor.setVelocity(left_motor_velocity)
+        right_motor.setVelocity(right_motor_velocity)
+elif mode == Mode.EXECUTION:
+    file_path = "(3tl)ga_history_box_mover_0affb0d6-0e5c-40e2-baa4-5b9ddfdb6a11.json"
+    data_dict = read_json_to_dict(file_path)
+
+    #print(data_dict["individuals"][-2]["fitness"])
+    robot_network = RobotNetwork()
+    weights_network = data_dict["individuals"][-2]["weights"]
+    load_robot_weights(robot_network, weights_network)
+    
+    translation_field.setSFVec3f(data_dict["world_info"]["initial_position"])
+    rotation_field.setSFRotation(data_dict["world_info"]["initial_rotation"])
+
+    translation_field_box.setSFVec3f(data_dict["world_info"]["initial_box_position"])
+    rotation_field_box.setSFRotation(data_dict["world_info"]["initial_box_rotation"])
+
+    while robot.step(timestep) != -1:
+        distance_sensor_values = get_sensor_values(distance_sensors)
+        normalized_distance_sensor_values = normalize_sensor_values(distance_sensor_values, 0, 1000)
+
+        light_finder_x, light_finder_y = 0, 0
+        if communication.getQueueLength() > 0:
+            box_position = json.loads(communication.getString())
+            light_finder_x, light_finder_y = box_position[0], box_position[1]
+            communication.nextPacket()
 
         input_tensor = torch.tensor(normalized_distance_sensor_values)
         input_tensor = torch.cat((input_tensor, torch.tensor([light_finder_x, light_finder_y])))
