@@ -3,12 +3,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class RobotNetwork(nn.Module):
-    def __init__(self, input_size=8, hidden_size=10):
+    def __init__(self, input_size=8, hidden_size=10, output_size=2):
         super(RobotNetwork, self).__init__()
         # Capa de entrada (8 sensores) a capa oculta
         self.fc1 = nn.Linear(input_size, hidden_size)
         # Capa oculta a capa de salida (2 motores)
-        self.fc2 = nn.Linear(hidden_size, 2)
+        self.fc2 = nn.Linear(hidden_size, output_size)
         
     def forward(self, x):
         # Aplicamos ReLU como función de activación en la capa oculta

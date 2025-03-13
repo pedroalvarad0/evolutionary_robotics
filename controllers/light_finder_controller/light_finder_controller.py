@@ -31,6 +31,18 @@ def normalize_sensor_values(sensor_values, min_value, max_value):
     return normalized
 
 
+def normalize_rotation_angle(rotation_angle):
+    if rotation_angle < 0:
+        rotation_angle += 2 * np.pi
+    return rotation_angle
+
+
+def get_sensor_angles(start_angle, degrees):
+    radians = np.radians(degrees)
+    angles = (start_angle + radians) % (2 * np.pi)
+    return angles
+
+
 def save_data(initial_position, initial_rotation, light_position, ga_history):
     # Create a dictionary with world information and individuals data
     data_to_save = {
@@ -88,6 +100,8 @@ right_motor.setPosition(float('inf'))
 
 left_motor.setVelocity(0.0)
 right_motor.setVelocity(0.0)
+
+degree_sensors = [20, 45, 90, 150, 210, 270, 315, 340]
 
 light_sensor_names = ["ls0", "ls1", "ls2", "ls3", "ls4", "ls5", "ls6", "ls7"]
 light_sensors = []
@@ -191,7 +205,7 @@ if mode == Mode.TRAINING:
 
         left_motor.setVelocity(left_motor_velocity)
         right_motor.setVelocity(right_motor_velocity)
-        
+
 elif mode == Mode.EXECUTION:
     file_path = "ga_history_20099ce8-c16c-4445-8949-d4e09cbd9028.json"
     data_dict = read_json_to_dict(file_path)
@@ -205,10 +219,25 @@ elif mode == Mode.EXECUTION:
 
     light_translation_field.setSFVec3f(data_dict["world_info"]["light_position"])
 
+    communication = robot.getDevice("emitter")
+
     while robot.step(timestep) != -1:
         light_sensor_values = get_sensor_values(light_sensors)
         normalized_light_sensor_values = normalize_sensor_values(light_sensor_values, 0, 4096)
         
+        #rotation_angle = rotation_field.getSFRotation()[3]
+        #normalized_rotation_angle = normalize_rotation_angle(rotation_angle)
+        #sensor_angles = get_sensor_angles(normalized_rotation_angle, degree_sensors)
+        #best_sensor_idx = np.argmin(normalized_light_sensor_values)
+
+        #print(translation_field.getSFVec3f())
+        communication.send(json.dumps(translation_field.getSFVec3f()))
+
+
+        #print(f"[MAIN1] ls{best_sensor_idx} | rotation: {sensor_angles[best_sensor_idx]}")
+        #absolute_light_angle = (normalized_rotation_angle + sensor_relative_angle) % (2 * np.pi)
+        #communication.send(f"{absolute_light_angle}")
+
         normalized_sensor_values = torch.tensor(normalized_light_sensor_values)
         directions = robot_network.forward(normalized_sensor_values)
         percentage_left_speed = directions[0].item()
