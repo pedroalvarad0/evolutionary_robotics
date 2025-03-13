@@ -54,35 +54,42 @@ def save_data(initial_position, initial_rotation, initial_box_position, initial_
         }
         data_to_save["individuals"].append(individual_data)
     
-    filename = f"ga_history_box_mover_{uuid.uuid4()}.json"
+    filename = f"ga_history_box_mover_fitness_experiment_{uuid.uuid4()}.json"
     with open(filename, "w") as f:
         json.dump(data_to_save, f)
 
 
 def fitness(box_positions, light_finder_positions):
-        # Encontrar la longitud mínima entre ambos arreglos
-        min_length = min(len(box_positions), len(light_finder_positions))
+    # Encontrar la longitud mínima entre ambos arreglos
+    min_length = min(len(box_positions), len(light_finder_positions))
+    
+    total_fitness = 0
+    box_movement_reward = 0
+    
+    # Iteramos solo hasta min_length - 1 porque necesitamos t y t-1
+    for t in range(1, min_length):
+        # Calculamos la distancia en t-1
+        d_prev = np.sqrt(
+            (box_positions[t-1][0] - light_finder_positions[t-1][0])**2 + 
+            (box_positions[t-1][1] - light_finder_positions[t-1][1])**2
+        )
         
-        total_fitness = 0
+        # Calculamos la distancia en t
+        d_current = np.sqrt(
+            (box_positions[t][0] - light_finder_positions[t][0])**2 + 
+            (box_positions[t][1] - light_finder_positions[t][1])**2
+        )
+
+        box_movement = np.sqrt(
+            (box_positions[t][0] - box_positions[t-1][0])**2 + 
+            (box_positions[t][1] - box_positions[t-1][1])**2
+        )
         
-        # Iteramos solo hasta min_length - 1 porque necesitamos t y t-1
-        for t in range(1, min_length):
-            # Calculamos la distancia en t-1
-            d_prev = np.sqrt(
-                (box_positions[t-1][0] - light_finder_positions[t-1][0])**2 + 
-                (box_positions[t-1][1] - light_finder_positions[t-1][1])**2
-            )
-            
-            # Calculamos la distancia en t
-            d_current = np.sqrt(
-                (box_positions[t][0] - light_finder_positions[t][0])**2 + 
-                (box_positions[t][1] - light_finder_positions[t][1])**2
-            )
-            
-            # Sumamos la diferencia de distancias
-            total_fitness += (d_prev - d_current)
-        
-        return total_fitness
+        # Sumamos la diferencia de distancias
+        total_fitness += (d_prev - d_current)
+        box_movement_reward += box_movement
+    alpha, beta = 1, 0.5
+    return alpha * total_fitness + beta * box_movement_reward
 
 
 class Mode(enum.Enum):
@@ -140,12 +147,12 @@ for i in range(len(distance_sensor_names)):
 communication = robot.getDevice("receiver")
 communication.enable(timestep)
 
-mode = Mode.EXECUTION
+mode = Mode.TRAINING
 
 if mode == Mode.TRAINING:
 
     POPULATION_SIZE = 100
-    GENERATIONS = 100
+    GENERATIONS = 25
 
     current_individual = 0
     current_generation = 0
@@ -176,7 +183,7 @@ if mode == Mode.TRAINING:
         current_time = robot.getTime() % MAX_TIME
 
         if previous_time > current_time: # nuevo individuo
-            population[current_individual].fitness = 1000 * fitness(box_positions, light_finder_positions)
+            population[current_individual].fitness = 1000 *fitness(box_positions, light_finder_positions)
             
             #print(f"Generation: {current_generation}, Individual: {current_individual}, Fitness: {population[current_individual].fitness}")
 
@@ -370,7 +377,7 @@ elif mode == Mode.EXECUTION:
     file_path = "(3tl)ga_history_box_mover_0affb0d6-0e5c-40e2-baa4-5b9ddfdb6a11.json"
     data_dict = read_json_to_dict(file_path)
 
-    #print(data_dict["individuals"][-2]["fitness"])
+    print(data_dict["individuals"][-2]["fitness"])
     robot_network = RobotNetwork()
     weights_network = data_dict["individuals"][-2]["weights"]
     load_robot_weights(robot_network, weights_network)

@@ -39,7 +39,8 @@ def normalize_rotation_angle(rotation_angle):
 
 def get_sensor_angles(start_angle, degrees):
     radians = np.radians(degrees)
-    angles = (start_angle + radians) % (2 * np.pi)
+    angles = start_angle + radians
+    angles = ((angles + np.pi) % (2 * np.pi)) - np.pi
     return angles
 
 
@@ -225,10 +226,12 @@ elif mode == Mode.EXECUTION:
         light_sensor_values = get_sensor_values(light_sensors)
         normalized_light_sensor_values = normalize_sensor_values(light_sensor_values, 0, 4096)
         
-        #rotation_angle = rotation_field.getSFRotation()[3]
+        rotation_angle = rotation_field.getSFRotation()[3]
         #normalized_rotation_angle = normalize_rotation_angle(rotation_angle)
-        #sensor_angles = get_sensor_angles(normalized_rotation_angle, degree_sensors)
+        sensor_angles = get_sensor_angles(rotation_angle, degree_sensors)
         #best_sensor_idx = np.argmin(normalized_light_sensor_values)
+
+        print(sensor_angles)
 
         #print(translation_field.getSFVec3f())
         communication.send(json.dumps(translation_field.getSFVec3f()))

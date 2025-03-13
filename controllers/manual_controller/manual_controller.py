@@ -66,8 +66,13 @@ right_motor.setPosition(float('inf'))
 left_motor.setVelocity(0.0)
 right_motor.setVelocity(0.0)
 
-robot_node = robot.getFromDef("MAIN2")
+robot_node = robot.getFromDef("MAIN1")
 rotation_field = robot_node.getField('rotation')
+
+#g0, g1, g2 = robot.getDevice("g0"), robot.getDevice("g1"), robot.getDevice("g2")
+# g0.enable(timestep)
+# g1.enable(timestep)
+# g2.enable(timestep)
 
 # Constants for motor speeds
 MAX_SPEED = 6.28  # Maximum speed for the motors
@@ -81,9 +86,14 @@ for i in range(len(distance_sensor_names)):
     sensor.enable(timestep)
     distance_sensors.append(sensor)
 
+camera1 = robot.getDevice("camera1")
+camera1.enable(timestep)
 
 communication = robot.getDevice("receiver")
 communication.enable(timestep)
+
+led0 = robot.getDevice("led8")
+#led0.enable(timestep)
 
 # Main loop
 while robot.step(timestep) != -1:
@@ -91,7 +101,7 @@ while robot.step(timestep) != -1:
     key = keyboard.getKey()
 
     #sensor_values = get_sensor_values(distance_sensors)
-    
+    led0.set(1)
     # Initialize motor speeds
     left_speed = 0.0
     right_speed = 0.0
@@ -125,6 +135,8 @@ while robot.step(timestep) != -1:
         light_finder_position = json.loads(communication.getString())
         print(f"{light_finder_position}")
         communication.nextPacket()
+
+    #print(f"g0: {g0.getValue()}, g1: {g1.getValue()}, g2: {g2.getValue()}")
 
     # image = camera.getImage()
     # image_rgb = get_np_image_from_camera(camera)
