@@ -4,7 +4,7 @@ from genetic_algorithm import GeneticAlgorithm, fitness
 import numpy as np
 import torch
 import json
-from utils import get_sensor_values, normalize_sensor_values, load_robot_weights, create_config_file, save_generation_data
+from utils import get_sensor_values, normalize_sensor_values, load_robot_weights, create_config_file, save_generation_data, read_json_to_dict
 from robot_network import RobotNetwork
 import uuid
 import enum
@@ -50,7 +50,7 @@ for i in range(len(light_sensor_names)):
     sensor.enable(timestep)
     light_sensors.append(sensor)
 
-mode = Mode.TRAINING
+mode = Mode.EXECUTION
 
 if mode == Mode.TRAINING:
     if robot_name == "robot1":
@@ -260,6 +260,90 @@ if mode == Mode.TRAINING:
 elif mode == Mode.CONTINUE_TRAINING:
     pass
 elif mode == Mode.EXECUTION:
-    pass
+    if robot_name == "robot1":
+        ga_uuid_string = "1775544e-eb6f-4e86-aa0a-846d56a77486"
+        generation_file = "generation_127.json"
 
+        robot1_ground_light_node = robot.getFromDef("GROUND_LIGHT_ROBOT1")
+        robot1_ground_light_on_field = robot1_ground_light_node.getField("on")
+
+        custom_data_field_robot2 = robot.getFromDef("ROBOT2").getField("customData")
+
+        generation_data = read_json_to_dict(f"histories/{ga_uuid_string}/{generation_file}")
+
+        weights = generation_data["fittest_individual_weights"]
+
+        midpoint = len(weights) // 2
+        weights_network1 = weights[:midpoint]
+        weights_network2 = weights[midpoint:]
+
+        robot_network = RobotNetwork()
+        load_robot_weights(robot_network, weights_network1)
+
+        custom_data_field_robot2.setSFString(str(weights_network2))
+
+        robot.step(timestep)
+
+        while robot.step(timestep) != -1:
+            light_sensor_values = get_sensor_values(light_sensors)
+            normalized_light_sensor_values = normalize_sensor_values(light_sensor_values, 0, 4095)
+            
+            distance_sensor_values = get_sensor_values(distance_sensors)
+            normalized_distance_sensor_values = normalize_sensor_values(distance_sensor_values, 0, 1000)
+
+            normalized_sensor_values = torch.cat((torch.tensor(normalized_light_sensor_values), torch.tensor(normalized_distance_sensor_values)))
+
+            outputs = robot_network.forward(normalized_sensor_values)
+            percentage_left_speed = outputs[0].item()
+            percentage_right_speed = outputs[1].item()
+            turn_light_on_prob = outputs[2].item()
+            
+            left_motor_velocity = percentage_left_speed * MAX_SPEED
+            right_motor_velocity = percentage_right_speed * MAX_SPEED
+
+            left_motor.setVelocity(left_motor_velocity)
+            right_motor.setVelocity(right_motor_velocity)
+
+            if turn_light_on_prob > 0.5:
+                robot1_ground_light_on_field.setSFBool(True)
+            else:
+                robot1_ground_light_on_field.setSFBool(False)
+
+    elif robot_name == "robot2":
+        robot.step(timestep)
+
+        robot2_node = robot.getFromDef("ROBOT2")
+        robot2_ground_light_node = robot.getFromDef("GROUND_LIGHT_ROBOT2")
+        robot2_ground_light_on_field = robot2_ground_light_node.getField("on")
+
+        custom_data_field_robot2 = robot2_node.getField("customData")
+        weights = json.loads(custom_data_field_robot2.getSFString())
+
+        robot_network = RobotNetwork()
+        load_robot_weights(robot_network, weights)
+
+        while robot.step(timestep) != -1:
+            light_sensor_values = get_sensor_values(light_sensors)
+            normalized_light_sensor_values = normalize_sensor_values(light_sensor_values, 0, 4095)
+
+            distance_sensor_values = get_sensor_values(distance_sensors)
+            normalized_distance_sensor_values = normalize_sensor_values(distance_sensor_values, 0, 1000)
+
+            normalized_sensor_values = torch.cat((torch.tensor(normalized_light_sensor_values), torch.tensor(normalized_distance_sensor_values)))
+
+            outputs = robot_network.forward(normalized_sensor_values)
+            percentage_left_speed = outputs[0].item()
+            percentage_right_speed = outputs[1].item()
+            turn_light_on_prob = outputs[2].item()
+            
+            left_motor_velocity = percentage_left_speed * MAX_SPEED
+            right_motor_velocity = percentage_right_speed * MAX_SPEED
+
+            left_motor.setVelocity(left_motor_velocity)
+            right_motor.setVelocity(right_motor_velocity)
+
+            if turn_light_on_prob > 0.5:
+                robot2_ground_light_on_field.setSFBool(True)
+            else:
+                robot2_ground_light_on_field.setSFBool(False)
 # main loop

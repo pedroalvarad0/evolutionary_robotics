@@ -72,3 +72,16 @@ def save_generation_data(fittest_individual, population, current_generation, ga_
 
     with open(f"histories/{str(ga_uuid)}/generation_{current_generation}.json", "w") as f:
         json.dump(generation_data, f)
+
+
+def read_json_to_dict(file_path):
+    try:
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+        return data
+    except FileNotFoundError:
+        print(f"Error: File '{file_path}' not found.")
+        return None
+    except json.JSONDecodeError:
+        print(f"Error: File '{file_path}' contains invalid JSON.")
+        return None
