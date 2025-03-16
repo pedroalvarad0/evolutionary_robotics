@@ -39,14 +39,16 @@ def load_robot_weights(robot_network, weights):
         idx += layer_size
 
 
-def create_config_file(ga_uuid, max_time, population_size, generations):
+def create_config_file(ga_uuid, max_time, population_size, generations, crossover_rate, mutation_rate):
     os.makedirs(f"histories/{str(ga_uuid)}", exist_ok=True)
     
     config_file = {
         "ga_uuid": str(ga_uuid),
         "max_time": max_time,
         "population_size": population_size,
-        "generations": generations
+        "generations": generations,
+        "crossover_rate": crossover_rate,
+        "mutation_rate": mutation_rate
     }
 
     with open(f"histories/{str(ga_uuid)}/config.json", "w") as f:

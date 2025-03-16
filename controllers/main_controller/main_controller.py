@@ -23,6 +23,8 @@ MAX_SPEED = 6.28
 MAX_TIME = 60
 POPULATION_SIZE = 50
 GENERATIONS = 500
+CROSSOVER_RATE = 0.8
+MUTATION_RATE = 0.02
 
 left_motor = robot.getDevice('left wheel motor')
 right_motor = robot.getDevice('right wheel motor')
@@ -56,7 +58,7 @@ if mode == Mode.TRAINING:
     if robot_name == "robot1":
         ga_uuid = uuid.uuid4()
 
-        create_config_file(ga_uuid, MAX_TIME, POPULATION_SIZE, GENERATIONS)
+        create_config_file(ga_uuid, MAX_TIME, POPULATION_SIZE, GENERATIONS, CROSSOVER_RATE, MUTATION_RATE)
 
         # obtener nodos de los robots
         robot1_node = robot.getFromDef("ROBOT1")
@@ -104,8 +106,8 @@ if mode == Mode.TRAINING:
         #ga_history = []
         genetic_algorithm = GeneticAlgorithm(
             population_size=POPULATION_SIZE,
-            crossover_rate=0.8,
-            mutation_rate=0.02,
+            crossover_rate=CROSSOVER_RATE,
+            mutation_rate=MUTATION_RATE,
             representation="real"
         )
         population = genetic_algorithm.generate_initial_population()
