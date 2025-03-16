@@ -33,12 +33,10 @@ led0 = robot.getDevice("led0")
 #print(light.getField("on").getSFBool())
 
 while robot.step(timestep) != -1:
-
-    pass
     
-    # if np.random.rand() < 0.80:
-    #     light.getField("on").setSFBool(True)
-    # else:
-    #     light.getField("on").setSFBool(False)
+    if np.random.rand() < 0.80:
+        light.getField("on").setSFBool(True)
+    else:
+        light.getField("on").setSFBool(False)
 
     

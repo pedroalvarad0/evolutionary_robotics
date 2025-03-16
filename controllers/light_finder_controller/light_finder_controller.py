@@ -152,7 +152,7 @@ if mode == Mode.TRAINING:
         previous_time = current_time
         current_time = robot.getTime() % MAX_TIME
 
-        if previous_time > current_time: # nuevo individuo
+        if previous_time > current_time: # nuevo individuo   
             population[current_individual].fitness = fitness(light_history)
             #print(f"Generation: {current_generation}, Individual: {current_individual}, Fitness: {population[current_individual].fitness}")
 
