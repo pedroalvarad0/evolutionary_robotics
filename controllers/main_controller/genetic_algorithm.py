@@ -2,7 +2,7 @@ import numpy as np
 from robot_network import RobotNetwork
 import struct
 
-def generate_random_weights(input_size=11, hidden_size=15, output_size=2):
+def generate_random_weights(input_size=16, hidden_size=10, output_size=3):
 
     network1 = RobotNetwork(input_size, hidden_size, output_size)
     network2 = RobotNetwork(input_size, hidden_size, output_size)
@@ -18,6 +18,15 @@ def generate_random_weights(input_size=11, hidden_size=15, output_size=2):
         weights_list.extend(weights)
 
     return weights_list
+
+
+def fitness(box_position, area_position):
+    distance = np.sqrt((box_position[0] - area_position[0])**2 + 
+                       (box_position[1] - area_position[1])**2)
+    
+    fitness_value = 1.0 / (distance + 0.0001)
+    
+    return fitness_value
 
 
 class Individual:
@@ -54,9 +63,8 @@ class Individual:
 
 
 class GeneticAlgorithm:
-    def __init__(self, population_size=100, generations=100, crossover_rate=0.8, mutation_rate=0.02, representation="binary"):
+    def __init__(self, population_size=100, crossover_rate=0.8, mutation_rate=0.02, representation="binary"):
         self.population_size = population_size
-        self.generations = generations
         self.crossover_rate = crossover_rate
         self.mutation_rate = mutation_rate
         self.representation = representation
