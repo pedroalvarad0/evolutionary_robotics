@@ -1,5 +1,6 @@
 import numpy as np
 from robot_network import RobotNetwork
+from copy import deepcopy
 import struct
 
 def generate_random_weights(input_size=16, hidden_size=10, output_size=3):
@@ -77,13 +78,17 @@ class GeneticAlgorithm:
 
     def create_next_generation(self, population):
         population = sorted(population, key=lambda x: x.fitness, reverse=True)
+
+        num_elite = max(1, int(self.population_size * 0.1))
+        elite_individuals = [deepcopy(individual) for individual in population[:num_elite]]
+
         fittest_individual = population[0]
 
-        new_population = []
+        new_population = elite_individuals[:]
 
         while len(new_population) < len(population):
-            parent1 = self.tournament_selection(population)
-            parent2 = self.tournament_selection(population)
+            parent1 = deepcopy(self.tournament_selection(population))
+            parent2 = deepcopy(self.tournament_selection(population))
 
             if np.random.random() < self.crossover_rate:
                 if self.representation == "real":
@@ -101,7 +106,12 @@ class GeneticAlgorithm:
                     new_population.append(child1)
                     new_population.append(child2)
             else:
-                child = np.random.choice([parent1, parent2])
+                child = deepcopy(np.random.choice([parent1, parent2]))
+                if self.representation == "real":
+                    self.mutate_real_valued(child)
+                elif self.representation == "binary":
+                    self.mutate_binary(child)
+
                 new_population.append(child)
 
         return fittest_individual, new_population
