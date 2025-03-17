@@ -1,4 +1,5 @@
 from controller import Supervisor, Keyboard
+import numpy as np
 
 robot = Supervisor()
 robot_name = robot.getName()
@@ -34,17 +35,36 @@ def get_sensor_values(sensors):
 MAX_SPEED = 6.28  # Maximum speed for the motors
 TURN_COEFFICIENT = 0.5  # Coefficient to reduce speed while turning
 
-# camera1 = robot.getDevice("camera")
-# camera1.enable(timestep)
+def get_np_image_from_camera(camera):
+    image = camera.getImage()
+    width = camera.getWidth()
+    height = camera.getHeight()
+    image_array = np.frombuffer(image, np.uint8).reshape((height, width, 4))
+    image_rgb = image_array[:, :, :3][:, :, ::-1]  # Convertir BGRA a RGB
+    return image_rgb
+
+
+def calculate_average_color(image):
+    avg_color = np.mean(image, axis=(0,1))
+    avg_color = np.round(avg_color).astype(int) / 255
+    return avg_color
+
+
+camera = robot.getDevice("camera")
+camera.enable(timestep)
 
 while robot.step(timestep) != -1:
     sensor_values = get_sensor_values(light_sensors)
-    print(f"sensor_values: {sensor_values}")
+    #print(f"sensor_values: {sensor_values}")
 
     key = keyboard.getKey()
 
     left_speed = 0.0
     right_speed = 0.0
+
+    image = get_np_image_from_camera(camera)
+    average_color = calculate_average_color(image)
+    print(f"average_color: {average_color}")
     
     # Handle keyboard input
     if key == Keyboard.UP:

@@ -3,7 +3,7 @@ from robot_network import RobotNetwork
 from copy import deepcopy
 import struct
 
-def generate_random_weights(input_size=16, hidden_size=10, output_size=3):
+def generate_random_weights(input_size=11, hidden_size=10, output_size=2):
 
     network1 = RobotNetwork(input_size, hidden_size, output_size)
     network2 = RobotNetwork(input_size, hidden_size, output_size)

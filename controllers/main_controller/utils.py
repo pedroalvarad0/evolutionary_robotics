@@ -27,7 +27,7 @@ def get_np_image_from_camera(camera):
 def calculate_average_color(image):
     avg_color = np.mean(image, axis=(0,1))
     avg_color = np.round(avg_color).astype(int) / 255
-    return avg_color
+    return avg_color.astype(np.float32)
 
 
 def load_robot_weights(robot_network, weights):

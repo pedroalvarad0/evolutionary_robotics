@@ -4,7 +4,7 @@ from genetic_algorithm import GeneticAlgorithm, fitness
 import numpy as np
 import torch
 import json
-from utils import get_sensor_values, normalize_sensor_values, load_robot_weights, create_config_file, save_generation_data, read_json_to_dict
+from utils import get_sensor_values,normalize_sensor_values, load_robot_weights, create_config_file, save_generation_data, read_json_to_dict, get_np_image_from_camera, calculate_average_color
 from robot_network import RobotNetwork
 import uuid
 import enum
@@ -27,6 +27,9 @@ CROSSOVER_RATE = 0.9
 MUTATION_RATE = 0.02
 REPRESENTATION = "binary"
 
+camera = robot.getDevice("camera")
+camera.enable(timestep)
+
 left_motor = robot.getDevice('left wheel motor')
 right_motor = robot.getDevice('right wheel motor')
 
@@ -36,17 +39,9 @@ right_motor.setPosition(float('inf'))
 left_motor.setVelocity(0.0)
 right_motor.setVelocity(0.0)
 
-# se realiza para ambos robots sin importar el nombre
-distance_sensors = []
 light_sensors = []
 
-distance_sensor_names = ["ps0", "ps1", "ps2", "ps3", "ps4", "ps5", "ps6", "ps7"]
 light_sensor_names = ["ls0", "ls1", "ls2", "ls3", "ls4", "ls5", "ls6", "ls7"]
-
-for i in range(len(distance_sensor_names)):
-    sensor = robot.getDevice(distance_sensor_names[i])
-    sensor.enable(timestep)
-    distance_sensors.append(sensor)
 
 for i in range(len(light_sensor_names)):
     sensor = robot.getDevice(light_sensor_names[i])
@@ -59,16 +54,12 @@ if mode == Mode.TRAINING:
     if robot_name == "robot1":
         ga_uuid = uuid.uuid4()
 
-
         # obtener nodos de los robots
         robot1_node = robot.getFromDef("ROBOT1")
         robot2_node = robot.getFromDef("ROBOT2")
 
         box_node = robot.getFromDef("BOX")
         area_node = robot.getFromDef("AREA")
-
-        robot1_ground_light_node = robot.getFromDef("GROUND_LIGHT_ROBOT1")
-        robot1_ground_light_on_field = robot1_ground_light_node.getField("on")
 
         translation_field_robot1 = robot1_node.getField("translation")
         rotation_field_robot1 = robot1_node.getField("rotation")
@@ -109,7 +100,6 @@ if mode == Mode.TRAINING:
             INITIAL_ROTATION_ROBOT2,
             INITIAL_POSITION_BOX,
             INITIAL_ROTATION_BOX,
-            INITIAL_POSITION_AREA
         )
 
         # variables para el algoritmo genetico
@@ -153,8 +143,6 @@ if mode == Mode.TRAINING:
                 # resetear valores
                 left_motor.setVelocity(0.0)
                 right_motor.setVelocity(0.0)
-                
-                robot1_ground_light_on_field.setSFBool(False)
 
                 robot1_node.resetPhysics()
                 robot2_node.resetPhysics()
@@ -202,17 +190,16 @@ if mode == Mode.TRAINING:
             # obtener valores de los sensores
             light_sensor_values = get_sensor_values(light_sensors)
             normalized_light_sensor_values = normalize_sensor_values(light_sensor_values, 0, 4095)
-            
-            distance_sensor_values = get_sensor_values(distance_sensors)
-            normalized_distance_sensor_values = normalize_sensor_values(distance_sensor_values, 0, 1000)
 
-            normalized_sensor_values = torch.cat((torch.tensor(normalized_light_sensor_values), torch.tensor(normalized_distance_sensor_values)))
+            image = get_np_image_from_camera(camera)
+            average_color = calculate_average_color(image)
+
+            normalized_sensor_values = torch.cat((torch.tensor(normalized_light_sensor_values), torch.tensor(average_color)))
 
             # obtener direcciones
             outputs = robot_network.forward(normalized_sensor_values)
             percentage_left_speed = outputs[0].item()
             percentage_right_speed = outputs[1].item()
-            turn_light_on_prob = outputs[2].item()
 
             left_motor_velocity = percentage_left_speed * MAX_SPEED
             right_motor_velocity = percentage_right_speed * MAX_SPEED
@@ -220,17 +207,10 @@ if mode == Mode.TRAINING:
             left_motor.setVelocity(left_motor_velocity)
             right_motor.setVelocity(right_motor_velocity)
 
-            if turn_light_on_prob > 0.5:
-                robot1_ground_light_on_field.setSFBool(True)
-            else:
-                robot1_ground_light_on_field.setSFBool(False)
-
     elif robot_name == "robot2":
         robot.step(timestep)
 
         robot2_node = robot.getFromDef("ROBOT2")
-        robot2_ground_light_node = robot.getFromDef("GROUND_LIGHT_ROBOT2")
-        robot2_ground_light_on_field = robot2_ground_light_node.getField("on")
 
         custom_data_field_robot2 = robot2_node.getField("customData")
         weights = json.loads(custom_data_field_robot2.getSFString())
@@ -245,7 +225,6 @@ if mode == Mode.TRAINING:
             current_time = robot.getTime() % MAX_TIME
 
             if previous_time > current_time: # nuevo individuo
-                robot2_ground_light_on_field.setSFBool(False)
 
                 # obtener nuevos pesos para main2
                 weights = json.loads(custom_data_field_robot2.getSFString())
@@ -255,36 +234,27 @@ if mode == Mode.TRAINING:
             light_sensor_values = get_sensor_values(light_sensors)
             normalized_light_sensor_values = normalize_sensor_values(light_sensor_values, 0, 4095)
             
-            distance_sensor_values = get_sensor_values(distance_sensors)
-            normalized_distance_sensor_values = normalize_sensor_values(distance_sensor_values, 0, 1000)
+            image = get_np_image_from_camera(camera)
+            average_color = calculate_average_color(image)
 
-            normalized_sensor_values = torch.cat((torch.tensor(normalized_light_sensor_values), torch.tensor(normalized_distance_sensor_values)))
+            normalized_sensor_values = torch.cat((torch.tensor(normalized_light_sensor_values), torch.tensor(average_color)))
             
             # obtener direcciones
             outputs = robot_network.forward(normalized_sensor_values)
             percentage_left_speed = outputs[0].item()
             percentage_right_speed = outputs[1].item()
-            turn_light_on_prob = outputs[2].item()
 
             left_motor_velocity = percentage_left_speed * MAX_SPEED
             right_motor_velocity = percentage_right_speed * MAX_SPEED
 
             left_motor.setVelocity(left_motor_velocity)
             right_motor.setVelocity(right_motor_velocity)
-
-            if turn_light_on_prob > 0.5:
-                robot2_ground_light_on_field.setSFBool(True)
-            else:
-                robot2_ground_light_on_field.setSFBool(False)
 elif mode == Mode.CONTINUE_TRAINING:
     pass
 elif mode == Mode.EXECUTION:
     if robot_name == "robot1":
         ga_uuid_string = "1775544e-eb6f-4e86-aa0a-846d56a77486"
         generation_file = "generation_127.json"
-
-        robot1_ground_light_node = robot.getFromDef("GROUND_LIGHT_ROBOT1")
-        robot1_ground_light_on_field = robot1_ground_light_node.getField("on")
 
         custom_data_field_robot2 = robot.getFromDef("ROBOT2").getField("customData")
 
@@ -307,33 +277,24 @@ elif mode == Mode.EXECUTION:
             light_sensor_values = get_sensor_values(light_sensors)
             normalized_light_sensor_values = normalize_sensor_values(light_sensor_values, 0, 4095)
             
-            distance_sensor_values = get_sensor_values(distance_sensors)
-            normalized_distance_sensor_values = normalize_sensor_values(distance_sensor_values, 0, 1000)
+            image = get_np_image_from_camera(camera)
+            average_color = calculate_average_color(image)
 
-            normalized_sensor_values = torch.cat((torch.tensor(normalized_light_sensor_values), torch.tensor(normalized_distance_sensor_values)))
+            normalized_sensor_values = torch.cat((torch.tensor(normalized_light_sensor_values), torch.tensor(average_color)))
 
             outputs = robot_network.forward(normalized_sensor_values)
             percentage_left_speed = outputs[0].item()
             percentage_right_speed = outputs[1].item()
-            turn_light_on_prob = outputs[2].item()
             
             left_motor_velocity = percentage_left_speed * MAX_SPEED
             right_motor_velocity = percentage_right_speed * MAX_SPEED
 
             left_motor.setVelocity(left_motor_velocity)
             right_motor.setVelocity(right_motor_velocity)
-
-            if turn_light_on_prob > 0.5:
-                robot1_ground_light_on_field.setSFBool(True)
-            else:
-                robot1_ground_light_on_field.setSFBool(False)
-
     elif robot_name == "robot2":
         robot.step(timestep)
 
         robot2_node = robot.getFromDef("ROBOT2")
-        robot2_ground_light_node = robot.getFromDef("GROUND_LIGHT_ROBOT2")
-        robot2_ground_light_on_field = robot2_ground_light_node.getField("on")
 
         custom_data_field_robot2 = robot2_node.getField("customData")
         weights = json.loads(custom_data_field_robot2.getSFString())
@@ -345,24 +306,17 @@ elif mode == Mode.EXECUTION:
             light_sensor_values = get_sensor_values(light_sensors)
             normalized_light_sensor_values = normalize_sensor_values(light_sensor_values, 0, 4095)
 
-            distance_sensor_values = get_sensor_values(distance_sensors)
-            normalized_distance_sensor_values = normalize_sensor_values(distance_sensor_values, 0, 1000)
+            image = get_np_image_from_camera(camera)
+            average_color = calculate_average_color(image)
 
-            normalized_sensor_values = torch.cat((torch.tensor(normalized_light_sensor_values), torch.tensor(normalized_distance_sensor_values)))
+            normalized_sensor_values = torch.cat((torch.tensor(normalized_light_sensor_values), torch.tensor(average_color)))
 
             outputs = robot_network.forward(normalized_sensor_values)
             percentage_left_speed = outputs[0].item()
             percentage_right_speed = outputs[1].item()
-            turn_light_on_prob = outputs[2].item()
             
             left_motor_velocity = percentage_left_speed * MAX_SPEED
             right_motor_velocity = percentage_right_speed * MAX_SPEED
 
             left_motor.setVelocity(left_motor_velocity)
             right_motor.setVelocity(right_motor_velocity)
-
-            if turn_light_on_prob > 0.5:
-                robot2_ground_light_on_field.setSFBool(True)
-            else:
-                robot2_ground_light_on_field.setSFBool(False)
-# main loop
