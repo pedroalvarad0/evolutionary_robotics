@@ -23,8 +23,9 @@ MAX_SPEED = 6.28
 MAX_TIME = 60
 POPULATION_SIZE = 50
 GENERATIONS = 500
-CROSSOVER_RATE = 0.8
+CROSSOVER_RATE = 0.9
 MUTATION_RATE = 0.02
+REPRESENTATION = "binary"
 
 left_motor = robot.getDevice('left wheel motor')
 right_motor = robot.getDevice('right wheel motor')
@@ -52,13 +53,12 @@ for i in range(len(light_sensor_names)):
     sensor.enable(timestep)
     light_sensors.append(sensor)
 
-mode = Mode.EXECUTION
+mode = Mode.TRAINING
 
 if mode == Mode.TRAINING:
     if robot_name == "robot1":
         ga_uuid = uuid.uuid4()
 
-        create_config_file(ga_uuid, MAX_TIME, POPULATION_SIZE, GENERATIONS, CROSSOVER_RATE, MUTATION_RATE)
 
         # obtener nodos de los robots
         robot1_node = robot.getFromDef("ROBOT1")
@@ -94,6 +94,23 @@ if mode == Mode.TRAINING:
         INITIAL_ROTATION_BOX = rotation_field_box.getSFRotation()
 
         INITIAL_POSITION_AREA = translation_field_area.getSFVec3f()
+        
+        create_config_file(
+            ga_uuid,
+            MAX_TIME,
+            POPULATION_SIZE,
+            GENERATIONS,
+            CROSSOVER_RATE,
+            MUTATION_RATE,
+            REPRESENTATION,
+            INITIAL_POSITION_ROBOT1,
+            INITIAL_ROTATION_ROBOT1,
+            INITIAL_POSITION_ROBOT2,
+            INITIAL_ROTATION_ROBOT2,
+            INITIAL_POSITION_BOX,
+            INITIAL_ROTATION_BOX,
+            INITIAL_POSITION_AREA
+        )
 
         # variables para el algoritmo genetico
         current_individual = 0
@@ -108,7 +125,7 @@ if mode == Mode.TRAINING:
             population_size=POPULATION_SIZE,
             crossover_rate=CROSSOVER_RATE,
             mutation_rate=MUTATION_RATE,
-            representation="real"
+            representation=REPRESENTATION
         )
         population = genetic_algorithm.generate_initial_population()
 
