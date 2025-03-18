@@ -1,9 +1,9 @@
 import numpy as np
-from robot_network import RobotNetwork
+from robot_network import RobotNetwork, SimpleRobotNetwork
 from copy import deepcopy
 import struct
 
-def generate_random_weights(input_size=11, hidden_size=10, output_size=2):
+def generate_random_weights(input_size=9, hidden_size=6, output_size=2):
 
     network1 = RobotNetwork(input_size, hidden_size, output_size)
     network2 = RobotNetwork(input_size, hidden_size, output_size)
@@ -21,6 +21,17 @@ def generate_random_weights(input_size=11, hidden_size=10, output_size=2):
     return weights_list
 
 
+def generate_random_weights_simple(input_size=22, output_size=4):
+    network = SimpleRobotNetwork(input_size, output_size)
+
+    weights_list = []
+
+    for param in network.parameters():
+        weights = param.data.numpy().flatten().tolist()
+        weights_list.extend(weights)
+
+    return weights_list
+
 def fitness(box_position, area_position):
     distance = np.sqrt((box_position[0] - area_position[0])**2 + 
                        (box_position[1] - area_position[1])**2)
@@ -28,6 +39,18 @@ def fitness(box_position, area_position):
     fitness_value = 1.0 / (distance + 0.0001)
     
     return fitness_value
+
+
+def move_box_fitness(box_positions_history):
+    total_distance = 0
+    for i in range(1, len(box_positions_history)):
+        x_current, y_current = box_positions_history[i][0], box_positions_history[i][1]
+        x_prev, y_prev = box_positions_history[i-1][0], box_positions_history[i-1][1]
+        
+        distance = np.sqrt((x_current - x_prev)**2 + (y_current - y_prev)**2)
+        total_distance += distance
+     
+    return 1000 * total_distance
 
 
 class Individual:
@@ -56,11 +79,14 @@ class Individual:
         self.weights = self.binary_to_weights(self.binary_weights)
 
     def get_weights(self):
-        midpoint = len(self.weights) // 2
-        weights_network1 = self.weights[:midpoint]
-        weights_network2 = self.weights[midpoint:]
+        return self.weights
+
+    # def get_weights(self):
+    #     midpoint = len(self.weights) // 2
+    #     weights_network1 = self.weights[:midpoint]
+    #     weights_network2 = self.weights[midpoint:]
         
-        return weights_network1, weights_network2
+    #     return weights_network1, weights_network2
 
 
 class GeneticAlgorithm:
@@ -71,7 +97,7 @@ class GeneticAlgorithm:
         self.representation = representation
 
     def generate_random_individual(self):
-        return Individual(weights=generate_random_weights())
+        return Individual(weights=generate_random_weights_simple())
     
     def generate_initial_population(self):
         return [self.generate_random_individual() for _ in range(self.population_size)]
@@ -116,7 +142,7 @@ class GeneticAlgorithm:
 
         return fittest_individual, new_population
     
-    def tournament_selection(self, population, tournament_size=10):
+    def tournament_selection(self, population, tournament_size=3):
         tournament = list(np.random.choice(population, tournament_size))
         tournament.sort(key=lambda x: x.fitness, reverse=True)
         return tournament[0]

@@ -51,8 +51,8 @@ def create_config_file(
     initial_rotation_robot1,
     initial_position_robot2,
     initial_rotation_robot2,
-    initial_position_box,
-    initial_rotation_box):
+    initial_position_object,
+    initial_rotation_object):
     os.makedirs(f"histories/{str(ga_uuid)}", exist_ok=True)
     
     config_file = {
@@ -67,8 +67,8 @@ def create_config_file(
         "initial_rotation_robot1": initial_rotation_robot1,
         "initial_position_robot2": initial_position_robot2,
         "initial_rotation_robot2": initial_rotation_robot2,
-        "initial_position_box": initial_position_box,
-        "initial_rotation_box": initial_rotation_box
+        "initial_position_object": initial_position_object,
+        "initial_rotation_object": initial_rotation_object
     }
 
     with open(f"histories/{str(ga_uuid)}/config.json", "w") as f:
