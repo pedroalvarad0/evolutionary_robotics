@@ -125,3 +125,12 @@ def get_history_info(history_uuid):
         gens_info.append(gen_dict)
 
     return config, gens_info
+
+
+def get_last_generation_info(ga_uuid):
+    history_path = os.path.join("histories", ga_uuid)
+    files = sorted(os.listdir(history_path), 
+               key=lambda x: os.path.getctime(os.path.join(history_path, x)))
+    
+    last_generation_file = os.path.join(history_path, files[-1])
+    return read_json_to_dict(last_generation_file)

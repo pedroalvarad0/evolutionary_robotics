@@ -21,7 +21,7 @@ def generate_random_weights(input_size=9, hidden_size=6, output_size=2):
     return weights_list
 
 
-def generate_random_weights_simple(input_size=22, output_size=4):
+def generate_random_weights_simple(input_size=18, output_size=4):
     network = SimpleRobotNetwork(input_size, output_size)
 
     weights_list = []
@@ -36,7 +36,7 @@ def fitness(box_position, area_position):
     distance = np.sqrt((box_position[0] - area_position[0])**2 + 
                        (box_position[1] - area_position[1])**2)
     
-    fitness_value = 1.0 / (distance + 0.0001)
+    fitness_value = 1.0 / (distance)
     
     return fitness_value
 

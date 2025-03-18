@@ -14,7 +14,7 @@ class RobotNetwork(nn.Module):
         return x
     
 class SimpleRobotNetwork(nn.Module):
-    def __init__(self, input_size=22, output_size=4):
+    def __init__(self, input_size=18, output_size=4):
         super(SimpleRobotNetwork, self).__init__()
         self.fc1 = nn.Linear(input_size, output_size)
         

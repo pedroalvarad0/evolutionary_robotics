@@ -112,11 +112,11 @@ for i in range(len(light_sensor_names)):
     sensor.enable(timestep)
     light_sensors.append(sensor)
 
-mode = Mode.EXECUTION
+mode = Mode.TRAINING
 
 if mode == Mode.TRAINING:
 
-    POPULATION_SIZE = 100
+    POPULATION_SIZE = 10
     GENERATIONS = 25
 
     current_individual = 0

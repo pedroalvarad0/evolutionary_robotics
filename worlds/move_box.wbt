@@ -9,8 +9,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.586742897075539 -0.360741417000492 -0.7249816568658002 3.980188162756161
-  position 0.45582038102823297 -0.9575661782807651 2.5221301213176006
+  orientation 0.31613793584595506 -0.14858949703948396 -0.9370047848803187 3.97127778895581
+  position 1.2659953218332185 -1.4203201090269386 1.6256819372135531
 }
 TexturedBackground {
   skybox FALSE
@@ -29,12 +29,12 @@ DEF ARENA RectangleArena {
   }
 }
 DEF ROBOT1 E-puck {
-  hidden position_0_0 2.891315685745339e-08
-  hidden position_0_1 -2.8912763420732994e-08
-  hidden rotation_1 0 1 0 2.9802322387695313e-08
-  hidden rotation_2 0 -1 0 2.9802322387695313e-08
-  translation 0.231043 -0.682185 -5.63297e-05
-  rotation -0.0005154129152486532 0.0014363897638088542 -0.9999988355663088 -1.7400753071795858
+  hidden position_0_0 59.77997009138721
+  hidden position_0_1 49.21589133809031
+  hidden rotation_1 0 -1 0 3.0518829804086516
+  hidden rotation_2 0 -1 0 1.0495911193463832
+  translation 0.401214 -0.601868 -8.831e-05
+  rotation 0.0006503828169380304 -0.0003740828947076249 0.9999997185320502 3.1366
   name "robot1"
   controller "main_controller"
   supervisor TRUE
@@ -47,12 +47,12 @@ DEF ROBOT1 E-puck {
   ]
 }
 DEF ROBOT2 E-puck {
-  hidden position_0_0 -2.8495613868572977e-08
-  hidden position_0_1 2.8495380229723005e-08
-  hidden rotation_1 0 -1 0 2.9802322387695313e-08
-  hidden rotation_2 0 1 0 2.9802322387695313e-08
-  translation 0.401473 -0.528333 -4.06933e-05
-  rotation -0.0020834091180292405 0.0007113786988516533 0.9999975766704606 3.10836
+  hidden position_0_0 56.97475706423958
+  hidden position_0_1 44.334629920381296
+  hidden rotation_1 0 -0.9999999999999999 0 5.857096007556281
+  hidden rotation_2 0 -1 0 5.9308525370553955
+  translation 0.393193 -0.412757 -5.09988e-05
+  rotation -0.0009721877309806135 0.0012681796490750703 0.9999987232848816 -3.113635307179586
   name "robot2"
   controller "main_controller"
   controllerArgs [
@@ -82,23 +82,20 @@ DEF AREA Solid {
   ]
 }
 DEF OBJECT Solid {
-  translation 0.145106 -0.475842 0.099921
-  rotation -0.011430823659502617 0.004480633164196407 -0.9999246272579315 0.002662136352352992
+  translation 0.149677 -0.496533 0.07
   children [
     Shape {
       appearance PBRAppearance {
         baseColor 1 0.278813 0.154742
       }
-      geometry Cylinder {
-        height 0.2
-        radius 0.1
+      geometry Box {
+        size 0.2 0.3 0.15
       }
     }
   ]
-  name "solid(1)"
-  boundingObject Cylinder {
-    height 0.2
-    radius 0.1
+  name "solid(2)"
+  boundingObject Box {
+    size 0.2 0.3 0.15
   }
   physics Physics {
     mass 0.2
