@@ -107,3 +107,21 @@ def read_json_to_dict(file_path):
     except json.JSONDecodeError:
         print(f"Error: File '{file_path}' contains invalid JSON.")
         return None
+    
+
+def get_history_info(history_uuid):
+    history_path = os.path.join("histories", history_uuid)
+
+    config = read_json_to_dict(os.path.join(history_path, "config.json"))
+
+    files = sorted(os.listdir(history_path), 
+               key=lambda x: os.path.getctime(os.path.join(history_path, x)))
+    
+    gens_info = []
+    for i in range(1, len(files)):
+        file_path = os.path.join(history_path, files[i])
+        gen_dict = read_json_to_dict(file_path)
+        #del gen_dict["population"]
+        gens_info.append(gen_dict)
+
+    return config, gens_info

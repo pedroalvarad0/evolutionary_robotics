@@ -49,12 +49,18 @@ def calculate_average_color(image):
     avg_color = np.round(avg_color).astype(int) / 255
     return avg_color
 
+def normalize_sensor_values(sensor_values, min_value, max_value):
+    normalized = [(x - min_value) / (max_value - min_value) for x in sensor_values]
+    return normalized
+
 
 camera = robot.getDevice("camera")
 camera.enable(timestep)
 
 while robot.step(timestep) != -1:
     sensor_values = get_sensor_values(light_sensors)
+    normalized_sensor_values = normalize_sensor_values(sensor_values, 0, 4095)
+    discretize_sensor_values = [1 if x < 0.5 else 0 for x in normalized_sensor_values]
     #print(f"sensor_values: {sensor_values}")
 
     key = keyboard.getKey()
@@ -64,7 +70,14 @@ while robot.step(timestep) != -1:
 
     image = get_np_image_from_camera(camera)
     average_color = calculate_average_color(image)
-    print(f"average_color: {average_color}")
+
+    seeing_red = np.logical_and(average_color[0] > average_color[1], average_color[0] > average_color[2])
+
+    print(f"discretize_sensor_values: {discretize_sensor_values}")
+
+    #print(f"seeing_red: {seeing_red}")
+
+    #print(f"average_color: {average_color}")
     
     # Handle keyboard input
     if key == Keyboard.UP:

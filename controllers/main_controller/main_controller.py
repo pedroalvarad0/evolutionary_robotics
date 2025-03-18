@@ -4,7 +4,7 @@ from genetic_algorithm import GeneticAlgorithm, fitness, move_box_fitness
 import numpy as np
 import torch
 import json
-from utils import get_sensor_values,normalize_sensor_values, load_robot_weights, create_config_file, save_generation_data, read_json_to_dict, get_np_image_from_camera, calculate_average_color
+from utils import get_sensor_values,normalize_sensor_values, load_robot_weights, create_config_file, save_generation_data, read_json_to_dict, get_np_image_from_camera, calculate_average_color, get_history_info
 from robot_network import RobotNetwork, SimpleRobotNetwork
 import uuid
 import enum
@@ -14,7 +14,8 @@ class Mode(enum.Enum):
     TRAINING = 1    # Mode for training the controller
     CONTINUE_TRAINING = 2   # Mode for continuing the training
     EXECUTION = 3   # Mode for using the trained controller
-    TESTING = 4   # Mode for testing the controller
+    REPLAY = 4
+    TESTING = 5   # Mode for testing the controller
 
 robot = Supervisor()
 robot_name = robot.getName()
@@ -48,7 +49,7 @@ for i in range(len(light_sensor_names)):
     sensor.enable(timestep)
     light_sensors.append(sensor)
 
-mode = Mode.TRAINING
+mode = Mode.REPLAY
 
 if mode == Mode.TRAINING:
     if robot_name == "robot1":
@@ -245,6 +246,10 @@ if mode == Mode.TRAINING:
         while robot.step(timestep) != -1:
             previous_time = current_time
             current_time = robot.getTime() % MAX_TIME
+
+            if previous_time > current_time:
+                left_motor.setVelocity(0.0)
+                right_motor.setVelocity(0.0)
             
             # obtener valores de los sensores
             light_sensor_values = get_sensor_values(light_sensors)
@@ -267,6 +272,162 @@ if mode == Mode.TRAINING:
             right_motor.setVelocity(right_motor_velocity)
 elif mode == Mode.CONTINUE_TRAINING:
     pass
+elif mode == Mode.REPLAY:
+
+    if robot_name == "robot1":
+        history_uuid = "46c4c704-bbaa-4a16-9be1-0e57f74425fd"
+        config, gens_info = get_history_info(history_uuid)
+
+
+        robot1_node = robot.getFromDef("ROBOT1")
+        robot2_node = robot.getFromDef("ROBOT2")
+
+        object_node = robot.getFromDef("OBJECT")
+        translation_field_object = object_node.getField("translation")
+        rotation_field_object = object_node.getField("rotation")
+
+        translation_field_robot1 = robot1_node.getField("translation")
+        rotation_field_robot1 = robot1_node.getField("rotation")
+
+        translation_field_robot2 = robot2_node.getField("translation")
+        rotation_field_robot2 = robot2_node.getField("rotation")
+
+        translation_field_object = object_node.getField("translation")
+        rotation_field_object = object_node.getField("rotation")
+
+        INITIAL_POSITION_ROBOT1 = config["initial_position_robot1"]
+        INITIAL_ROTATION_ROBOT1 = config["initial_rotation_robot1"]
+
+        INITIAL_POSITION_ROBOT2 = config["initial_position_robot2"]
+        INITIAL_ROTATION_ROBOT2 = config["initial_rotation_robot2"]
+
+        INITIAL_POSITION_OBJECT = config["initial_position_object"]
+        INITIAL_ROTATION_OBJECT = config["initial_rotation_object"]
+
+        translation_field_robot1.setSFVec3f(INITIAL_POSITION_ROBOT1)
+        rotation_field_robot1.setSFRotation(INITIAL_ROTATION_ROBOT1)
+
+        translation_field_robot2.setSFVec3f(INITIAL_POSITION_ROBOT2)
+        rotation_field_robot2.setSFRotation(INITIAL_ROTATION_ROBOT2)
+
+        translation_field_object.setSFVec3f(INITIAL_POSITION_OBJECT)
+        rotation_field_object.setSFRotation(INITIAL_ROTATION_OBJECT)
+
+        robot1_receiver = robot.getDevice("receiver")
+        robot1_receiver.enable(timestep)
+
+        robot1_emitter = robot.getDevice("emitter")
+
+        robot_network = SimpleRobotNetwork()
+
+        current_generation = 0
+        current_time = 0
+        previous_time = 0
+
+        weights = gens_info[current_generation]["fittest_individual_weights"]
+        load_robot_weights(robot_network, weights)
+    
+        print(f"replaying {current_generation}/{len(gens_info)} ({gens_info[current_generation]['fittest_individual_fitness']})")
+        while robot.step(timestep) != -1:
+            previous_time = current_time
+            current_time = robot.getTime() % MAX_TIME
+
+            if previous_time > current_time:
+                current_generation += 1
+
+                left_motor.setVelocity(0.0)
+                right_motor.setVelocity(0.0)
+
+                robot1_node.resetPhysics()
+                robot2_node.resetPhysics()
+                object_node.resetPhysics()
+
+                translation_field_robot1.setSFVec3f(INITIAL_POSITION_ROBOT1)
+                rotation_field_robot1.setSFRotation(INITIAL_ROTATION_ROBOT1)
+
+                translation_field_robot2.setSFVec3f(INITIAL_POSITION_ROBOT2)
+                rotation_field_robot2.setSFRotation(INITIAL_ROTATION_ROBOT2)
+
+                translation_field_object.setSFVec3f(INITIAL_POSITION_OBJECT)
+                rotation_field_object.setSFRotation(INITIAL_ROTATION_OBJECT)
+
+                if current_generation < len(gens_info):
+                    weights = gens_info[current_generation]["fittest_individual_weights"]
+                    load_robot_weights(robot_network, weights)
+
+                    print(f"replaying {current_generation}/{len(gens_info)} ({gens_info[current_generation]['fittest_individual_fitness']})")
+                else:
+                    break
+                
+            robot2_inputs = torch.zeros(11) # 11 inputs: 8 light sensors + 3 average color
+
+            if robot1_receiver.getQueueLength() > 0:
+                robot2_inputs = torch.tensor(json.loads(robot1_receiver.getString()))
+                robot1_receiver.nextPacket()
+
+            # obtener valores de los sensores
+            robot1_light_sensor_values = get_sensor_values(light_sensors)
+            robot1_normalized_light_sensor_values = normalize_sensor_values(robot1_light_sensor_values, 0, 4095)
+            robot1_image = get_np_image_from_camera(camera)
+            robot1_average_color = calculate_average_color(robot1_image)
+            robot1_inputs = torch.cat((torch.tensor(robot1_normalized_light_sensor_values), torch.tensor(robot1_average_color)))
+
+            inputs = torch.cat((robot1_inputs, robot2_inputs))
+
+            # obtener direcciones
+            outputs = robot_network.forward(inputs)
+            robot1_percentage_left_speed = outputs[0].item()
+            robot1_percentage_right_speed = outputs[1].item()
+
+            robot2_percentage_left_speed = outputs[2].item()
+            robot2_percentage_right_speed = outputs[3].item()
+            
+            robot1_emitter.send(str([robot2_percentage_left_speed, robot2_percentage_right_speed]))
+
+            left_motor_velocity = robot1_percentage_left_speed * MAX_SPEED
+            right_motor_velocity = robot1_percentage_right_speed * MAX_SPEED
+
+            left_motor.setVelocity(left_motor_velocity)
+            right_motor.setVelocity(right_motor_velocity)
+    elif robot_name == "robot2":
+
+        robot2_node = robot.getFromDef("ROBOT2")
+
+        robot2_receiver = robot.getDevice("receiver")
+        robot2_receiver.enable(timestep)
+
+        robot2_emitter = robot.getDevice("emitter")
+
+        current_time = 0
+        previous_time = 0
+
+        while robot.step(timestep) != -1:
+            previous_time = current_time
+            current_time = robot.getTime() % MAX_TIME
+
+            if previous_time > current_time:
+                left_motor.setVelocity(0.0)
+                right_motor.setVelocity(0.0)
+
+            light_sensor_values = get_sensor_values(light_sensors)
+            normalized_light_sensor_values = normalize_sensor_values(light_sensor_values, 0, 4095)
+
+            image = get_np_image_from_camera(camera)
+            average_color = calculate_average_color(image).tolist()
+
+            robot2_emitter.send(str(normalized_light_sensor_values + average_color))
+
+            directions = [0, 0]
+            if robot2_receiver.getQueueLength() > 0:
+                directions = json.loads(robot2_receiver.getString())
+                robot2_receiver.nextPacket()
+
+            left_motor_velocity = directions[0] * MAX_SPEED
+            right_motor_velocity = directions[1] * MAX_SPEED
+
+            left_motor.setVelocity(left_motor_velocity)
+            right_motor.setVelocity(right_motor_velocity)
+
 elif mode == Mode.EXECUTION:
     if robot_name == "robot1":
         ga_uuid_string = "b91cdd72-5a30-4c4d-a7bf-047535bb0dc7"
