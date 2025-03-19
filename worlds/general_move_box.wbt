@@ -1,0 +1,82 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/ThreadMetalPlate.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/gctronic/e-puck/protos/E-puck.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.0868851667124083 0.9720554769633132 0.21808052987596763 0.7779907750061815
+  position -1.515137544651314 -0.6101740446881446 1.7373288600988512
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+  luminosity 0
+}
+DEF ARENA RectangleArena {
+  floorAppearance ThreadMetalPlate {
+    type "square"
+  }
+}
+DEF OBJECT Solid {
+  translation 0.26955180129739853 -0.0788300695663714 0.04990190034836827
+  rotation -2.0838572762265876e-15 2.6380439894665776e-16 1 0.02482644705401916
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 0.0336919 0
+      }
+      geometry Box {
+        size 0.1 0.2 0.1
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.1 0.2 0.1
+  }
+  physics Physics {
+    mass 0.25
+  }
+  linearVelocity -2.9574792251416104e-17 2.4964467204411695e-17 -2.7232903221375437e-09
+  angularVelocity -8.375697178745238e-16 -1.0336806269475502e-15 1.6143204337452607e-16
+}
+DEF EPUCK1 E-puck {
+  hidden position_0_0 -6.06278482385169e-08
+  hidden position_0_1 -6.062792897035469e-08
+  hidden rotation_1 0 1 0 1.1620994640834086
+  hidden rotation_2 0 1 0 4.6995293256771715
+  translation 0.106393999982688 -0.025332700001690807 -6.396199586206248e-05
+  rotation 1.6587131818332767e-06 -3.769977340343891e-05 0.9999999992879878 0.08804639512416121
+  name "epuck1"
+  controller "general_move_box_controller"
+  supervisor TRUE
+  groundSensorsSlot [
+    PointLight {
+      attenuation 0 0 12
+      color 0 0.0773175 0.92929
+      location -0.01 0 0
+    }
+  ]
+}
+DEF EPUCK2 E-puck {
+  hidden position_0_0 0.6429801732067514
+  hidden position_0_1 0.6429801731611584
+  hidden rotation_1 0 1 0 0.6429801732067514
+  hidden rotation_2 0 1 0 0.6429801731611584
+  translation 0.11524141379533732 -0.12871699358522223 -6.396112388900622e-05
+  rotation 0.00010001614472701592 0.9999999884380874 -0.00011454516953218111 4.2064925176905704e-05
+  name "epuck2"
+  controller "general_move_box_controller"
+  supervisor TRUE
+  groundSensorsSlot [
+    PointLight {
+      attenuation 0 0 12
+      color 0 0.0773175 0.92929
+      location -0.01 0 0
+    }
+  ]
+}

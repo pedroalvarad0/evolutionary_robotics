@@ -73,9 +73,10 @@ while robot.step(timestep) != -1:
 
     seeing_red = np.logical_and(average_color[0] > average_color[1], average_color[0] > average_color[2])
 
-    print(f"discretize_sensor_values: {discretize_sensor_values}")
+    #print(normalized_sensor_values)
+    #print(f"discretize_sensor_values: {discretize_sensor_values}")
 
-    #print(f"seeing_red: {seeing_red}")
+    print(f"seeing_red: {seeing_red}")
 
     #print(f"average_color: {average_color}")
     
