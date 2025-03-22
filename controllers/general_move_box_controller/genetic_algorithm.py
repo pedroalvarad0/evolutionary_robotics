@@ -24,7 +24,7 @@ def move_object_fitness(object_positions_history):
         distance = np.sqrt((x_current - x_prev)**2 + (y_current - y_prev)**2)
         total_distance += distance
      
-    return total_distance
+    return 1000 * total_distance
 
 def fitness(object_positions_history, inputs_epuck1, inputs_epuck2):
     object_distance = move_object_fitness(object_positions_history)
@@ -52,7 +52,7 @@ def fitness(object_positions_history, inputs_epuck1, inputs_epuck2):
 
     # print(f"object_distance: {1000 * object_distance}")
 
-    fitness_ = 1000 * object_distance + epuck1_steps_seeing_object + epuck2_steps_seeing_object + epuck1_light_perceived / 20 + epuck2_light_perceived / 20
+    fitness_ = 1000 * object_distance + 10 * (epuck1_steps_seeing_object + epuck2_steps_seeing_object) + (epuck1_light_perceived + epuck2_light_perceived) / 30
 
     return fitness_
 

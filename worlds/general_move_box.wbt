@@ -45,7 +45,7 @@ DEF OBJECT Solid {
 DEF EPUCK1 E-puck {
   hidden position_0_0 -6.06278482385169e-08
   hidden position_0_1 -6.062792897035469e-08
-  hidden rotation_1 0 1 0 1.1620994640834084
+  hidden rotation_1 0 1 0 1.162099464083408
   hidden rotation_2 0 1 0 4.6995293256771715
   translation 0.106393999982688 -0.025332700001690807 -6.396199586206248e-05
   rotation 1.6587131818332767e-06 -3.769977340343891e-05 0.9999999992879878 0.08804639512416121
@@ -54,7 +54,7 @@ DEF EPUCK1 E-puck {
   supervisor TRUE
   groundSensorsSlot [
     PointLight {
-      attenuation 0 0 12
+      attenuation 0 0 1
       color 0 0.0773175 0.92929
       location -0.01 0 0
     }
@@ -68,11 +68,11 @@ DEF EPUCK2 E-puck {
   translation 0.11524141379533732 -0.12871699358522223 -6.396112388900622e-05
   rotation 0.00010001614472701592 0.9999999884380874 -0.00011454516953218111 4.2064925176905704e-05
   name "epuck2"
-  controller "general_move_box_controller"
+  controller "remote_controller"
   supervisor TRUE
   groundSensorsSlot [
     PointLight {
-      attenuation 0 0 12
+      attenuation 0 0 1
       color 0 0.0773175 0.92929
       location -0.01 0 0
     }

@@ -1,7 +1,7 @@
 """general_move_box_controller controller."""
 import torch
 from controller import Supervisor
-from genetic_algorithm import GeneticAlgorithm, fitness
+from genetic_algorithm import GeneticAlgorithm, fitness, move_object_fitness
 from robot_network import SimpleRobotNetwork
 from utils import load_robot_weights, get_sensor_values, normalize_sensor_values, get_np_image_from_camera, calculate_average_color, AreaSampler
 import numpy as np
@@ -179,14 +179,14 @@ while robot.step(timestep) != -1:
 
     if previous_time > current_time:
         # calculate fitness
-        population[current_individual].fitness = fitness(move_object_history, inputs_epuck1, inputs_epuck2)
-
+        #population[current_individual].fitness = fitness(move_object_history, inputs_epuck1, inputs_epuck2)
+        population[current_individual].fitness += move_object_fitness(move_object_history)
         left_motor.setVelocity(0.0)
         right_motor.setVelocity(0.0)
 
         move_object_history = []
-        inputs_epuck1 = []
-        inputs_epuck2 = []
+        # inputs_epuck1 = []
+        # inputs_epuck2 = []
 
         current_test += 1
 
@@ -234,7 +234,7 @@ while robot.step(timestep) != -1:
 
     epuck2_inputs = epuck2_inputs.to(torch.float32)
 
-    inputs_epuck2.append(epuck2_inputs.tolist())
+    #inputs_epuck2.append(epuck2_inputs.tolist())
 
     light_sensor_values = get_sensor_values(light_sensors)
     normalized_light_sensor_values = normalize_sensor_values(light_sensor_values, 0, 4095)
@@ -245,7 +245,7 @@ while robot.step(timestep) != -1:
     seeing_object = np.logical_and(average_color[0] > average_color[1], average_color[0] > average_color[2]).astype(int)
 
     inputs = torch.cat((torch.tensor(discretize_light_sensor_values), torch.tensor([seeing_object]))).to(torch.float32)
-    inputs_epuck1.append(inputs.tolist())
+    #inputs_epuck1.append(inputs.tolist())
 
     outputs = robot_network.forward(inputs)
     outputs_epuck2 = robot_network.forward(epuck2_inputs)
