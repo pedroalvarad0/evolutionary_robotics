@@ -36,7 +36,7 @@ def fitness(box_position, area_position):
     distance = np.sqrt((box_position[0] - area_position[0])**2 + 
                        (box_position[1] - area_position[1])**2)
     
-    fitness_value = 1.0 / (distance)
+    fitness_value = 1.0 / (distance + 0.0001)
     
     return fitness_value
 
