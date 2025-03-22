@@ -21,7 +21,7 @@ def generate_random_weights(input_size=9, hidden_size=6, output_size=2):
     return weights_list
 
 
-def generate_random_weights_simple(input_size=18, output_size=4):
+def generate_random_weights_simple(input_size=9, output_size=2):
     network = SimpleRobotNetwork(input_size, output_size)
 
     weights_list = []

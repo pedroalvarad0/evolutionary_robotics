@@ -137,7 +137,7 @@ initial_positions = {
     }
 }
 
-mode = Mode.EXECUTION
+mode = Mode.TRAINING
 
 if robot_name == "robot1":
     ga_uuid = ""
@@ -257,6 +257,8 @@ if robot_name == "robot1":
             robot2_inputs = torch.tensor(json.loads(receiver.getString()))
             receiver.nextPacket()
 
+        robot2_inputs = robot2_inputs.to(torch.float32)
+
         light_sensor_values = get_sensor_values(light_sensors)
         normalized_light_sensor_values = normalize_sensor_values(light_sensor_values, 0, 4095)
         discretize_light_sensor_values = [1 if x < 0.5 else 0 for x in normalized_light_sensor_values]
@@ -264,16 +266,19 @@ if robot_name == "robot1":
         image = get_np_image_from_camera(camera)
         average_color = calculate_average_color(image).tolist()
         seeing_object = np.logical_and(average_color[0] > average_color[1], average_color[0] > average_color[2]).astype(int)
-        self_inputs = torch.cat((torch.tensor(discretize_light_sensor_values).to(torch.float32), torch.tensor([seeing_object]).to(torch.float32)))
+        self_inputs = torch.cat((torch.tensor(discretize_light_sensor_values), torch.tensor([seeing_object]))).to(torch.float32)
 
-        inputs = torch.cat((self_inputs, robot2_inputs))
+        #inputs = torch.cat((self_inputs, robot2_inputs))
+
+        outputs_robot2 = robot_network.forward(robot2_inputs)
+        outputs_self = robot_network.forward(self_inputs)
         
-        outputs = robot_network.forward(inputs)
-        percentage_left_speed = outputs[0].item()
-        percentage_right_speed = outputs[1].item()
+        #outputs = robot_network.forward(inputs)
+        percentage_left_speed = outputs_self[0].item()
+        percentage_right_speed = outputs_self[1].item()
 
-        robot2_percentage_left_speed = outputs[2].item()
-        robot2_percentage_right_speed = outputs[3].item()
+        robot2_percentage_left_speed = outputs_robot2[0].item()
+        robot2_percentage_right_speed = outputs_robot2[1].item()
 
         emitter.send(str([robot2_percentage_left_speed, robot2_percentage_right_speed]))
 
