@@ -3,10 +3,11 @@ import torch
 from controller import Supervisor
 from genetic_algorithm import GeneticAlgorithm, fitness, move_object_fitness
 from robot_network import SimpleRobotNetwork, RobotNetwork
-from utils import load_robot_weights, get_sensor_values, normalize_sensor_values, get_np_image_from_camera, calculate_average_color, AreaSampler
+from utils import load_robot_weights, get_sensor_values, normalize_sensor_values, get_np_image_from_camera, calculate_average_color, AreaSampler, create_config_file, save_generation_data
 import numpy as np
 import json
-
+import uuid
+import enum
 
 def generate_random_epuck_positions(x_min, x_max, y_min, y_max):
     x = np.random.uniform(x_min, x_max)
@@ -71,6 +72,12 @@ def set_initial_positions(positions, fields, nodes):
     fields["epuck1"]["rotation"].setSFRotation(epuck1_rotation)
     fields["epuck2"]["rotation"].setSFRotation([0, 0, 1, positions["epuck2"][2]])
     fields["object"]["rotation"].setSFRotation(object_rotation)
+
+
+class Mode(enum.Enum):
+    TRAINING = 1    # Mode for training the controller
+    CONTINUE_TRAINING = 2   # Mode for continuing the training
+    EXECUTION = 3   # Mode for using the trained controller
 
 MAX_SPEED = 6.28
 
@@ -173,57 +180,80 @@ inputs_epuck2 = []
 
 set_initial_positions(random_initial_positions[current_test], fields, nodes)
 
+mode = Mode.TRAINING
+
+ga_uuid = ""
+
+if mode == Mode.TRAINING:
+    ga_uuid = uuid.uuid4()
+
+    create_config_file(
+        ga_uuid,
+        max_time,
+        population_size,
+        generations,
+        crossover_rate,
+        mutation_rate,
+        representation,
+        tests_per_individual
+    )
+elif mode == Mode.CONTINUE_TRAINING:
+    pass
+
 while robot.step(timestep) != -1:
     previous_time = current_time
     current_time = robot.getTime() % max_time
 
-    if previous_time > current_time:
-        # calculate fitness
-        #population[current_individual].fitness = fitness(move_object_history, inputs_epuck1, inputs_epuck2)
-        population[current_individual].fitness += move_object_fitness(move_object_history)
-        left_motor.setVelocity(0.0)
-        right_motor.setVelocity(0.0)
+    if mode == Mode.TRAINING or mode == Mode.CONTINUE_TRAINING:
+        if previous_time > current_time:
+            # calculate fitness
+            #population[current_individual].fitness = fitness(move_object_history, inputs_epuck1, inputs_epuck2)
+            population[current_individual].fitness += move_object_fitness(move_object_history)
+            left_motor.setVelocity(0.0)
+            right_motor.setVelocity(0.0)
 
-        move_object_history = []
-        # inputs_epuck1 = []
-        # inputs_epuck2 = []
+            move_object_history = []
+            # inputs_epuck1 = []
+            # inputs_epuck2 = []
 
-        current_test += 1
+            current_test += 1
 
-        if current_test < tests_per_individual: # same individual, different initial positions
-            set_initial_positions(random_initial_positions[current_test], fields, nodes)
-        else: # new individual, same generation
-            current_test = 0
-            current_individual += 1
-
-            if current_individual < population_size: # new individual, same generation
-                weights = population[current_individual].get_weights()
-                load_robot_weights(robot_network, weights)
-                
+            if current_test < tests_per_individual: # same individual, different initial positions
                 set_initial_positions(random_initial_positions[current_test], fields, nodes)
-            else: # new generation
-                current_individual = 0
+            else: # new individual, same generation
+                current_test = 0
+                current_individual += 1
 
-                for individual in population:
-                    individual.fitness = individual.fitness / tests_per_individual
+                if current_individual < population_size: # new individual, same generation
+                    weights = population[current_individual].get_weights()
+                    load_robot_weights(robot_network, weights)
+                    
+                    set_initial_positions(random_initial_positions[current_test], fields, nodes)
+                else: # new generation
+                    current_individual = 0
 
-                fittest_individual, new_population = genetic_algorithm.create_next_generation(population)
+                    for individual in population:
+                        individual.fitness = individual.fitness / tests_per_individual
 
-                print(f"Generation {current_generation}, Best Fitness: {fittest_individual.fitness}")
+                    fittest_individual, new_population = genetic_algorithm.create_next_generation(population)
 
-                population = new_population
-                current_generation += 1
+                    print(f"Generation {current_generation}, Best Fitness: {fittest_individual.fitness}")
 
-                next_weights = population[0].get_weights()
-                load_robot_weights(robot_network, next_weights)
+                    save_generation_data(fittest_individual, population, current_generation, ga_uuid)
 
-                if current_generation % reset_initial_conditions_every_n_generations == 0:
-                    random_initial_positions = generate_random_initial_positions(tests_per_individual, fields["arena"]["translation"].getSFVec3f(), fields["arena"]["floorSize"].getSFVec2f())
+                    population = new_population
+                    current_generation += 1
 
-                set_initial_positions(random_initial_positions[current_test], fields, nodes)
+                    next_weights = population[0].get_weights()
+                    load_robot_weights(robot_network, next_weights)
 
-                if current_generation == generations:
-                    pass
+                    if current_generation % reset_initial_conditions_every_n_generations == 0:
+                        random_initial_positions = generate_random_initial_positions(tests_per_individual, fields["arena"]["translation"].getSFVec3f(), fields["arena"]["floorSize"].getSFVec2f())
+
+                    set_initial_positions(random_initial_positions[current_test], fields, nodes)
+
+                    if current_generation == generations:
+                        pass
 
     move_object_history.append(fields["object"]["translation"].getSFVec3f())
 

@@ -1,5 +1,7 @@
 import torch
 import numpy as np
+import os
+import json
 
 def get_sensor_values(sensors):
     sensor_values = []
@@ -119,3 +121,49 @@ class AreaSampler:
             "epuck2": positions[1].to_tuple(),
             "object": positions[2].to_tuple()
         }
+    
+def create_config_file(
+    ga_uuid,
+    max_time,
+    population_size,
+    generations,
+    crossover_rate,
+    mutation_rate,
+    representation,
+    tests_per_individual):
+    os.makedirs(f"histories/{str(ga_uuid)}", exist_ok=True)
+    
+    config_file = {
+        "ga_uuid": str(ga_uuid),
+        "max_time": max_time,
+        "population_size": population_size,
+        "generations": generations,
+        "crossover_rate": crossover_rate,
+        "mutation_rate": mutation_rate,
+        "representation": representation,
+        "tests_per_individual": tests_per_individual
+    }
+    
+    with open(f"histories/{str(ga_uuid)}/config.json", "w") as f:
+        json.dump(config_file, f)
+
+
+def save_generation_data(fittest_individual, population, current_generation, ga_uuid):
+    os.makedirs(f"histories/{str(ga_uuid)}", exist_ok=True)
+    
+    generation_data = {
+        "generation": current_generation,
+        "fittest_individual_fitness": fittest_individual.fitness,
+        "fittest_individual_weights": fittest_individual.weights,
+        "population": []
+    }
+
+    for individual_id, individual in enumerate(population):
+        generation_data["population"].append({
+            "individual_id": individual_id,
+            "fitness": individual.fitness,
+            "weights": individual.weights
+        })
+
+    with open(f"histories/{str(ga_uuid)}/generation_{current_generation}.json", "w") as f:
+        json.dump(generation_data, f)
