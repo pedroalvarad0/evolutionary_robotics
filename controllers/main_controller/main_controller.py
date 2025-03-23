@@ -137,7 +137,7 @@ initial_positions = {
     }
 }
 
-mode = Mode.TRAINING
+mode = Mode.EXECUTION
 
 if robot_name == "robot1":
     ga_uuid = ""
@@ -202,8 +202,8 @@ if robot_name == "robot1":
     load_robot_weights(robot_network, initial_weights)
 
     if mode == Mode.EXECUTION:
-        ga_uuid = "1b9cda21-241b-49a8-a4c0-5d56d3c86a1f"
-        generation_file = "generation_25.json"
+        ga_uuid = "4691bad5-e150-4509-bbab-2b496f51ebd7"
+        generation_file = "generation_279.json"
 
         generation_data = read_json_to_dict(f"histories/{ga_uuid}/{generation_file}")
         
@@ -222,7 +222,7 @@ if robot_name == "robot1":
             current_time = robot.getTime() % max_time
 
             if previous_time > current_time:
-                population[current_individual].fitness = fitness(fields["object"]["translation"].getSFVec3f(), initial_positions["object"]["translation"])
+                population[current_individual].fitness = fitness(fields["object"]["translation"].getSFVec3f(), initial_positions["area"]["translation"])
 
                 current_individual += 1
 

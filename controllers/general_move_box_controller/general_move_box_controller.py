@@ -2,7 +2,7 @@
 import torch
 from controller import Supervisor
 from genetic_algorithm import GeneticAlgorithm, fitness, move_object_fitness
-from robot_network import SimpleRobotNetwork
+from robot_network import SimpleRobotNetwork, RobotNetwork
 from utils import load_robot_weights, get_sensor_values, normalize_sensor_values, get_np_image_from_camera, calculate_average_color, AreaSampler
 import numpy as np
 import json
@@ -160,7 +160,7 @@ current_generation = 0
 population = genetic_algorithm.generate_initial_population()
 
 # Robot Network configurations
-robot_network = SimpleRobotNetwork()
+robot_network = RobotNetwork()
 initial_weights = population[0].get_weights()
 load_robot_weights(robot_network, initial_weights)
 

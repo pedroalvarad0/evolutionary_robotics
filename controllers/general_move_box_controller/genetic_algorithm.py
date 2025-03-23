@@ -1,10 +1,22 @@
 import numpy as np
-from robot_network import SimpleRobotNetwork
+from robot_network import SimpleRobotNetwork, RobotNetwork
 from copy import deepcopy
 import struct
 
 def generate_random_weights_simple(input_size=9, output_size=2):
     network = SimpleRobotNetwork(input_size, output_size)
+
+    weights_list = []
+
+    for param in network.parameters():
+        weights = param.data.numpy().flatten().tolist()
+        weights_list.extend(weights)
+
+    return weights_list
+
+
+def generate_random_weights(input_size=9, hidden_size=10, output_size=2):
+    network = RobotNetwork(input_size, hidden_size, output_size)
 
     weights_list = []
 
@@ -100,7 +112,7 @@ class GeneticAlgorithm:
         self.representation = representation
 
     def generate_random_individual(self):
-        return Individual(weights=generate_random_weights_simple())
+        return Individual(weights=generate_random_weights())
     
     def generate_initial_population(self):
         return [self.generate_random_individual() for _ in range(self.population_size)]
@@ -168,8 +180,8 @@ class GeneticAlgorithm:
         child1_binary = parent1.binary_weights[:point1] + parent2.binary_weights[point1:point2] + parent1.binary_weights[point2:]
         child2_binary = parent2.binary_weights[:point1] + parent1.binary_weights[point1:point2] + parent2.binary_weights[point2:]
 
-        child1 = Individual(weights=generate_random_weights_simple())
-        child2 = Individual(weights=generate_random_weights_simple())
+        child1 = Individual(weights=generate_random_weights())
+        child2 = Individual(weights=generate_random_weights())
 
         child1.binary_weights = child1_binary
         child2.binary_weights = child2_binary
