@@ -3,7 +3,19 @@ import torch
 from controller import Supervisor
 from genetic_algorithm import GeneticAlgorithm, fitness, move_object_fitness
 from robot_network import SimpleRobotNetwork, RobotNetwork
-from utils import load_robot_weights, get_sensor_values, normalize_sensor_values, get_np_image_from_camera, calculate_average_color, AreaSampler, create_config_file, save_generation_data
+from utils import (
+    load_robot_weights,
+    get_sensor_values, 
+    normalize_sensor_values, 
+    get_np_image_from_camera, 
+    calculate_average_color, 
+    AreaSampler, 
+    create_config_file, 
+    save_generation_data, 
+    read_json_to_dict, 
+    get_history_info, 
+    get_last_generation_info
+)
 import numpy as np
 import json
 import uuid
@@ -198,7 +210,34 @@ if mode == Mode.TRAINING:
         tests_per_individual
     )
 elif mode == Mode.CONTINUE_TRAINING:
-    pass
+    ga_uuid = "078c7ee4-05e7-43e2-95cd-3f9a49e2ca3a"
+    config, gens_info = get_history_info(ga_uuid)
+    last_generation_info = get_last_generation_info(ga_uuid)
+
+    current_individual = 0
+    current_generation = last_generation_info["generation"]
+
+    max_time = config["max_time"]
+    population_size = config["population_size"]
+    generations = config["generations"]
+    crossover_rate = config["crossover_rate"]
+    mutation_rate = config["mutation_rate"]
+    representation = config["representation"]
+    tests_per_individual = config["tests_per_individual"]
+
+    for individual in population:
+        individual.weights = last_generation_info["population"][current_individual]["weights"]
+    
+elif mode == Mode.EXECUTION:
+    ga_uuid = "078c7ee4-05e7-43e2-95cd-3f9a49e2ca3a"
+    generation_file = "generation_120.json"
+
+    generation_data = read_json_to_dict(f"histories/{ga_uuid}/{generation_file}")
+    
+    print(f"[EXECUTION] Generation: {generation_data['generation']}, Best Fitness: {generation_data['fittest_individual_fitness']}")
+
+    weights = generation_data["fittest_individual_weights"]
+    load_robot_weights(robot_network, weights)
 
 while robot.step(timestep) != -1:
     previous_time = current_time
