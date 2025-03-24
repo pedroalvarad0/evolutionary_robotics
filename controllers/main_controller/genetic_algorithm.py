@@ -104,13 +104,9 @@ class GeneticAlgorithm:
 
     def create_next_generation(self, population):
         population = sorted(population, key=lambda x: x.fitness, reverse=True)
-
-        num_elite = max(1, int(self.population_size * 0.1))
-        elite_individuals = [deepcopy(individual) for individual in population[:num_elite]]
-
         fittest_individual = population[0]
 
-        new_population = elite_individuals[:]
+        new_population = []
 
         while len(new_population) < len(population):
             parent1 = deepcopy(self.tournament_selection(population))

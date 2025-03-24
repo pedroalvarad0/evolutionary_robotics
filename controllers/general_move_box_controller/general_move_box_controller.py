@@ -227,6 +227,8 @@ elif mode == Mode.CONTINUE_TRAINING:
 
     for individual in population:
         individual.weights = last_generation_info["population"][current_individual]["weights"]
+
+    print(f"[CONTINUE TRAINING] Reanudando entrenamiento de {ga_uuid}. Generation: {current_generation}")
     
 elif mode == Mode.EXECUTION:
     ga_uuid = "078c7ee4-05e7-43e2-95cd-3f9a49e2ca3a"
